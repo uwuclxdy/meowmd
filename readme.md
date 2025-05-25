@@ -1,4 +1,4 @@
-# [meowmd](https://github.com/uwuclxdy/meowmd) ✨
+# [meowmd](https://uwuclxdy.github.io/meowmd/meowmd.html) ✨
 
 > cute markdown editor with preview and copy button for code blocks :3
 
