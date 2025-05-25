@@ -1,0 +1,10 @@
+            - name: HTML Preview
+  # You may pin to the exact commit or the version.
+  # uses: pavi2410/html-preview-action@13a4d3c414d839a652df1b34d694ccbbd7c7c764
+  uses: pavi2410/html-preview-action@v4
+  with:
+    # The HTML file you want to preview, relative to the root of the repo
+    html_file: meowmd.html
+    # Prints a job summary with the link
+    job_summary: # optional, default is true
+          
