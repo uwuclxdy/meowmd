@@ -853,7 +853,7 @@ just start typing :3"
             return html.replace(
                 /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
                 (match, language, code) => {
-                    const escapedCode = code.replace(/&/g, '&amp;')
+                    const escapedCode = code.replace(/&/g, '&')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;');
                     return this.createCodeBlock(language, escapedCode);
@@ -861,7 +861,7 @@ just start typing :3"
             ).replace(
                 /<pre><code>([\s\S]*?)<\/code><\/pre>/g,
                 (match, code) => {
-                    const escapedCode = code.replace(/&/g, '&amp;')
+                    const escapedCode = code.replace(/&/g, '&')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;');
                     return this.createCodeBlock('text', escapedCode);
