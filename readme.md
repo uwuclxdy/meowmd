@@ -13,7 +13,7 @@ I was too lazy to copy broken md text from gemini myself, so I made this lol.
 
 ## Usage
 
-HitHub Pages `link goes here`.
+*[GitHub Pages](https://uwuclxdy.github.io/meowmd/meowmd.html)*
 
 - Type markdown in the left pane
 - See live preview on the right
@@ -34,8 +34,8 @@ Feel free to contribute with your vibes too! Open issues or submit PRs.
 
 ## License
 
-MIT License - use it however you want~ (◕‿◕)
+MIT License - u can do anything w ts
 
 ---
 
-Made with vibes and Claude 4 Sonnet ♡
+Made with vibes and Claude 4 Sonnet (including this readme) ♡
