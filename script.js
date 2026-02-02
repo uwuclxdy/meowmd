@@ -3,21 +3,23 @@ class UwuMarkdown {
         this.input = document.getElementById('markdownInput');
         this.preview = document.getElementById('previewContent');
         this.resizer = document.getElementById('resizer');
-        this.inputPane = document.querySelector('.input-pane');
+        this.inputPane = document.getElementById('inputPane');
+        this.previewPane = document.getElementById('previewPane');
+        this.tocDrawer = document.getElementById('tocDrawer');
+        this.tocContent = document.getElementById('tocContent');
+        this.hamburgerBtn = document.getElementById('hamburgerBtn');
+        this.tocCloseBtn = document.getElementById('tocCloseBtn');
+        this.overlay = document.getElementById('overlay');
         this.container = document.querySelector('.container');
         this.scrollToTopBtn = document.getElementById('scrollToTop');
         this.hero = document.getElementById('hero');
-        this.navbar = document.getElementById('navbar'); // Store navbar reference
-
-        // Scroll behavior state
-        this.isScrolling = false; // True if a programmatic scroll is active
-        this.hasSnapped = false;  // True if view is snapped to main content, false if in hero
-        this.lastScrollTop = 0;
+        this.navbar = document.getElementById('navbar');
 
         this.setupEventListeners();
         this.setupResizer();
         this.setupScrollHandler();
         this.setupScrollToTop();
+        this.setupDrawer();
         this.updatePreview(); // Initial preview update
     }
 
@@ -27,77 +29,58 @@ class UwuMarkdown {
 
     setupScrollToTop() {
         this.scrollToTopBtn.addEventListener('click', () => {
-            this.scrollToTopInternal(); // Renamed to avoid conflict with potential future window.scrollToTop
+            const heroHeight = this.hero.offsetHeight;
+            const navbarHeight = this.navbar.offsetHeight;
+            const scrollTarget = Math.max(0, heroHeight - navbarHeight);
+
+            window.scrollTo({
+                top: scrollTarget,
+                behavior: 'smooth'
+            });
         });
     }
 
-    // Renamed to avoid potential conflicts and clarify internal use
-    scrollToTopInternal() {
-        const navbarHeight = this.navbar.offsetHeight;
-        const heroHeight = this.hero.offsetHeight;
-        const targetScrollPosition = heroHeight - navbarHeight;
-        const scrollTarget = Math.max(0, targetScrollPosition);
-
-        this.isScrolling = true;
-
-        window.scrollTo({
-            top: scrollTarget,
-            behavior: 'smooth'
+    setupDrawer() {
+        // Open drawer
+        this.hamburgerBtn.addEventListener('click', () => {
+            this.tocDrawer.classList.add('open');
+            this.overlay.classList.add('active');
         });
 
-        const scrollDuration = 800;
-        setTimeout(() => {
-            this.isScrolling = false;
-            this.hasSnapped = true; // Snapped to main content area after scrolling up
-            this.lastScrollTop = scrollTarget;
-        }, scrollDuration);
+        // Close drawer
+        this.tocCloseBtn.addEventListener('click', () => {
+            this.tocDrawer.classList.remove('open');
+            this.overlay.classList.remove('active');
+        });
+
+        // Close drawer when clicking overlay
+        this.overlay.addEventListener('click', () => {
+            this.tocDrawer.classList.remove('open');
+            this.overlay.classList.remove('active');
+        });
+
+        // Close drawer on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.tocDrawer.classList.remove('open');
+                this.overlay.classList.remove('active');
+            }
+        });
     }
 
     setupScrollHandler() {
         let ticking = false;
         const logo = document.getElementById('logo');
-        const scrollIndicator = document.getElementById('scrollIndicator');
-        const scrollText = document.getElementById('scrollText');
-        let hasTriggeredGoodBoy = false;
 
         window.addEventListener('scroll', () => {
             if (!ticking) {
                 requestAnimationFrame(() => {
                     const scrollTop = document.documentElement.scrollTop;
                     const heroHeight = this.hero.offsetHeight;
-                    const navbarActualHeight = this.navbar.offsetHeight;
-
+                    const navbarHeight = this.navbar.offsetHeight;
                     const uiChangeThreshold = heroHeight * 0.05;
-                    const snapInitiationThreshold = heroHeight * 0.1;
 
-                    if (scrollTop > snapInitiationThreshold && !hasTriggeredGoodBoy) {
-                        hasTriggeredGoodBoy = true;
-                        scrollText.textContent = 'good boy :3';
-                        scrollText.style.textTransform = 'lowercase';
-                        scrollText.style.fontSize = '1.2rem';
-
-                        setTimeout(() => {
-                            scrollIndicator.classList.add('slide-away');
-                            setTimeout(() => {
-                                scrollIndicator.classList.add('hidden');
-                            }, 900);
-                        }, 1000);
-                    }
-
-                    if (scrollTop <= snapInitiationThreshold * 0.3 && hasTriggeredGoodBoy) {
-                        hasTriggeredGoodBoy = false;
-                        scrollIndicator.classList.remove('hidden');
-                        scrollIndicator.classList.remove('slide-away');
-                        scrollIndicator.classList.add('slide-up');
-
-                        setTimeout(() => {
-                            scrollText.textContent = 'scroll down!';
-                            scrollText.style.textTransform = 'uppercase';
-                            scrollText.style.fontSize = '';
-                            scrollIndicator.classList.remove('slide-up');
-                        }, 600);
-                    }
-
+                    // Logo/navbar visibility
                     if (scrollTop > uiChangeThreshold) {
                         logo.classList.add('navbar-mode');
                         this.navbar.style.opacity = '1';
@@ -106,15 +89,16 @@ class UwuMarkdown {
                         this.navbar.style.opacity = '0';
                     }
 
+                    // Scroll to top button visibility
                     if (scrollTop > heroHeight * 0.5) {
                         this.scrollToTopBtn.classList.add('visible');
                     } else {
                         this.scrollToTopBtn.classList.remove('visible');
                     }
 
-                    this.handleViewSnapping(scrollTop, snapInitiationThreshold, heroHeight, navbarActualHeight);
+                    // Update active TOC link
+                    this.updateActiveTocLink();
 
-                    this.lastScrollTop = scrollTop;
                     ticking = false;
                 });
                 ticking = true;
@@ -122,55 +106,22 @@ class UwuMarkdown {
         });
     }
 
-    handleViewSnapping(scrollTop, snapInitiationThreshold, heroHeight, navbarHeight) {
-        const contentSnapPosition = heroHeight - navbarHeight;
+    updateActiveTocLink() {
+        const headings = this.preview.querySelectorAll('h1, h2, h3');
+        const tocLinks = this.tocContent.querySelectorAll('.toc-link');
+        const scrollTop = window.scrollY;
 
-        if (!this.hasSnapped &&
-            scrollTop > snapInitiationThreshold &&
-            scrollTop < contentSnapPosition &&
-            scrollTop > this.lastScrollTop &&
-            !this.isScrolling) {
+        headings.forEach((heading, index) => {
+            const rect = heading.getBoundingClientRect();
+            const headingTop = rect.top + scrollTop;
 
-            this.isScrolling = true;
-            // REMOVED: document.body.classList.add('scroll-disabled');
-
-            window.scrollTo({
-                top: contentSnapPosition,
-                behavior: 'smooth'
-            });
-
-            setTimeout(() => {
-                this.isScrolling = false;
-                // REMOVED: document.body.classList.remove('scroll-disabled');
-                this.hasSnapped = true;
-            }, 800);
-        }
-
-        const reverseSnapTriggerPoint = contentSnapPosition - (heroHeight * 0.20);
-
-        if (this.hasSnapped &&
-            scrollTop < reverseSnapTriggerPoint &&
-            scrollTop < this.lastScrollTop &&
-            !this.isScrolling) {
-
-            this.isScrolling = true;
-            // REMOVED: document.body.classList.add('scroll-disabled');
-
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-
-            setTimeout(() => {
-                this.isScrolling = false;
-                // REMOVED: document.body.classList.remove('scroll-disabled');
-                this.hasSnapped = false;
-            }, 800);
-        }
-
-        if (this.hasSnapped && scrollTop < snapInitiationThreshold * 0.5 && !this.isScrolling) {
-            this.hasSnapped = false;
-        }
+            if (scrollTop >= headingTop - 100) {
+                tocLinks.forEach(link => link.classList.remove('active'));
+                if (tocLinks[index]) {
+                    tocLinks[index].classList.add('active');
+                }
+            }
+        });
     }
 
     setupResizer() {
@@ -203,18 +154,29 @@ class UwuMarkdown {
     updatePreview() {
         const markdown = this.input.value;
         if (!markdown.trim()) {
-            this.preview.innerHTML = `
-            <h1>Welcome to meowmd! ✨</h1>
-            <p>Start typing your markdown in the left pane to see the magic happen~ (◕‿◕)</p>
-            <h2>Features</h2>
-            <ul>
-                <li>Real-time markdown preview</li>
-                <li>Collapsible code blocks with copy buttons</li>
-                <li>Syntax highlighting</li>
-                <li>Resizable panes</li>
-                <li>Cute kawaii theme with GitHub styling~ ♡</li>
-            </ul>
-        `;
+            // Render the default welcome message
+            const defaultMarkdown = `# markdown goes here~
+
+## some stuff you can do
+- **bold** and *italic* text
+- [links](https://example.com)
+- \`code snippets\` and blocks
+- > quotes look nice too
+- tables, lists, whatever
+
+\`\`\`js
+// syntax highlighting works
+const editor = 'pretty neat';
+console.log(editor);
+\`\`\`
+
+just start typing :3`;
+
+            const html = marked.parse(defaultMarkdown);
+            this.preview.innerHTML = this.processCodeBlocks(html);
+            this.generateTOC();
+            this.highlightCode();
+            this.tocContent.innerHTML = '<p class="toc-empty">start typing to see headings...</p>';
             return;
         }
 
@@ -225,7 +187,63 @@ class UwuMarkdown {
 
         const html = marked.parse(markdown);
         this.preview.innerHTML = this.processCodeBlocks(html);
+        this.generateTOC();
         this.highlightCode();
+    }
+
+    generateTOC() {
+        const headings = this.preview.querySelectorAll('h1, h2, h3');
+
+        if (headings.length === 0) {
+            this.tocContent.innerHTML = '<p class="toc-empty">no headings found</p>';
+            return;
+        }
+
+        // Add IDs to headings
+        headings.forEach((heading, index) => {
+            const id = `heading-${index}`;
+            heading.id = id;
+        });
+
+        // Generate TOC HTML
+        let tocHtml = '<ul class="toc-list">';
+        headings.forEach((heading, index) => {
+            const level = parseInt(heading.tagName.charAt(1));
+            const text = heading.textContent.trim();
+            const id = `heading-${index}`;
+
+            let levelClass = 'toc-level-1';
+            if (level === 2) levelClass = 'toc-level-2';
+            else if (level === 3) levelClass = 'toc-level-3';
+
+            tocHtml += `
+                <li class="toc-item">
+                    <a class="toc-link ${levelClass}" data-target="${id}">
+                        ${text}
+                    </a>
+                </li>
+            `;
+        });
+        tocHtml += '</ul>';
+
+        this.tocContent.innerHTML = tocHtml;
+
+        // Add click handlers
+        this.tocContent.querySelectorAll('.toc-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.dataset.target;
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    const offset = this.navbar.offsetHeight + 20;
+                    const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
+                    window.scrollTo({
+                        top: elementPosition - offset,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
     }
 
     processCodeBlocks(html) {
@@ -350,3 +368,9 @@ class UwuMarkdown {
 
 // Initialize the app
 const app = new UwuMarkdown();
+
+// Console Easter Eggs
+console.log('%c👋 hey there!', 'font-size: 20px; color: #E07B53; font-weight: bold;');
+console.log('%clooks like you\'re snooping around the console 👀', 'font-size: 14px; color: #cdd6f4;');
+console.log('%cif you find any bugs, that\'s a feature™', 'font-size: 12px; color: #a6adc8; font-style: italic;');
+console.log('%c\nbtw, click the hamburger (☰) in the header for table of contents :3', 'font-size: 12px; color: #b4befe;');

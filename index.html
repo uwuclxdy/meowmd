@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>meowmd - simple markdown editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+
+<!-- Grain Texture Overlay -->
+<div class="grain"></div>
+
+<!-- Header/Navbar -->
+<div class="header" id="navbar">
+    <div class="header-left">
+        <button class="hamburger-btn" id="hamburgerBtn" title="table of contents">
+            <svg class="hamburger-icon" viewBox="0 0 24 24">
+                <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <div class="logo-nav">meowmd</div>
+    </div>
+</div>
+
+<!-- Logo -->
+<div class="logo" id="logo">meowmd</div>
+
+<!-- Scroll to Top Button -->
+<button class="scroll-to-top" id="scrollToTop" title="back to top">
+    <svg class="scroll-to-top-icon" viewBox="0 0 16 16">
+        <path d="M8 3.5L13.5 9H10v4H6V9H2.5L8 3.5z"/>
+    </svg>
+</button>
+
+<!-- Hero Section -->
+<section class="hero" id="hero">
+</section>
+
+<!-- Main Content -->
+<div class="main-content" id="mainContent">
+    <div class="container" id="editorContainer">
+        <div class="input-pane" id="inputPane">
+            <div class="input-header">markdown</div>
+            <label for="markdownInput"></label><textarea
+                class="markdown-input"
+                placeholder="# markdown goes here~
+
+## some stuff you can do
+- **bold** and *italic* text
+- [links](https://example.com)
+- `code snippets` and blocks
+- > quotes look nice too
+- tables, lists, whatever
+
+```js
+// syntax highlighting works
+const editor = 'pretty neat';
+console.log(editor);
+```
+
+just start typing :3"
+                id="markdownInput"
+        ></textarea>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="preview-pane" id="previewPane">
+            <div class="preview-header">preview</div>
+            <div class="preview-content" id="previewContent"># markdown goes here~
+
+## some stuff you can do
+- **bold** and *italic* text
+- [links](https://example.com)
+- `code snippets` and blocks
+- > quotes look nice too
+- tables, lists, whatever
+
+```js
+// syntax highlighting works
+const editor = 'pretty neat';
+console.log(editor);
+```
+
+just start typing :3</div>
+        </div>
+    </div>
+</div>
+
+<!-- TOC Sidebar Drawer -->
+<div class="toc-drawer" id="tocDrawer">
+    <div class="toc-drawer-header">
+        <div class="toc-drawer-title">table of contents</div>
+        <button class="toc-close-btn" id="tocCloseBtn">
+            <svg viewBox="0 0 24 24">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </div>
+    <div class="toc-drawer-content" id="tocContent">
+        <p class="toc-empty">start typing to see headings...</p>
+    </div>
+</div>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+</body>
+</html>
