@@ -369,8 +369,5 @@ just start typing :3`;
 // Initialize the app
 const app = new UwuMarkdown();
 
-// Console Easter Eggs
 console.log('%c👋 hey there!', 'font-size: 20px; color: #E07B53; font-weight: bold;');
-console.log('%clooks like you\'re snooping around the console 👀', 'font-size: 14px; color: #cdd6f4;');
-console.log('%cif you find any bugs, that\'s a feature™', 'font-size: 12px; color: #a6adc8; font-style: italic;');
-console.log('%c\nbtw, click the hamburger (☰) in the header for table of contents :3', 'font-size: 12px; color: #b4befe;');
+console.log('%cits not a bug, its a feature:', 'font-size: 12px; color: #a6adc8; font-style: italic;');
