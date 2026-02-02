@@ -1,0 +1,5 @@
+# Clean URLs - redirect /index.html to /
+/index.html  /  301
+
+# SPA fallback - redirect all 404s to index page
+/*  /index.html  404
