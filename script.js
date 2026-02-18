@@ -88,6 +88,22 @@ class UwuMarkdown {
 
     setupEventListeners() {
         this.input.addEventListener('input', () => this.updatePreview());
+
+        // Ctrl+S to manually save
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                const content = this.input.value;
+                if (content) {
+                    this.setStorage(`meowmd_content_${this.tabId}`, content);
+                    // Brief visual feedback
+                    this.input.style.outline = '2px solid var(--primary)';
+                    setTimeout(() => {
+                        this.input.style.outline = '';
+                    }, 300);
+                }
+            }
+        });
     }
 
     setupScrollToTop() {
