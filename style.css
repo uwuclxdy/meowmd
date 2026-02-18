@@ -445,6 +445,16 @@ body {
     min-width: 300px;
     width: 50%;
     flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.input-pane.hidden {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+    opacity: 0;
 }
 
 .resizer {
@@ -460,6 +470,10 @@ body {
     background: var(--primary);
 }
 
+.resizer.hidden {
+    display: none;
+}
+
 .preview-pane {
     flex: 1;
     background: var(--ctp-base);
@@ -468,16 +482,54 @@ body {
     flex-direction: column;
     position: relative;
     min-width: 300px;
+    transition: all 0.3s ease;
+}
+
+.preview-pane.full-width {
+    width: 100%;
+    flex: none;
 }
 
 .preview-header {
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 0.70rem var(--spacing-md);
     border-bottom: 1px solid var(--ctp-surface0);
     font-weight: 600;
     color: var(--ctp-subtext0);
     font-size: 0.875rem;
     background: var(--ctp-mantle);
     font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+}
+
+.preview-header span {
+    margin-left: 10px;
+}
+
+.toggle-editor-btn {
+    background: var(--ctp-surface0);
+    border: 1px solid var(--ctp-surface0);
+    color: var(--ctp-text);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.toggle-editor-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--ctp-base);
+}
+
+.toggle-editor-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
 }
 
 .preview-content {
