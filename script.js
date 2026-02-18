@@ -28,21 +28,19 @@ class UwuMarkdown {
     }
 
     getOrCreateTabId() {
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                // Page was restored from bfcache (e.g., tab duplication via Ctrl+Shift+T)
-                // Generate a new tab ID to avoid conflicts with the original tab
-                const newTabId = 'tab_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
-                sessionStorage.setItem('meowmd_tab_id', newTabId);
-                this.tabId = newTabId;
-                // Re-enable auto-save with new tab ID
-                this.setupAutoSave();
-                // Restore content for the new tab
-                this.restoreFromCookie();
-                this.updatePreview();
-            }
-        });
+        // Use performance API to detect navigation type
+        const navType = performance.getEntriesByType('navigation')[0]?.type;
 
+        // If this is a new navigation (not a reload or bfcache), generate fresh tabId
+        // This handles: typing URL in new tab, clicking links, etc.
+        if (navType === 'navigate') {
+            const tabId = 'tab_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+            sessionStorage.setItem('meowmd_tab_id', tabId);
+            return tabId;
+        }
+
+        // For reload (type 'reload') or bfcache restore (type 'back_forward'), keep existing tabId
+        // This ensures content persists on refresh
         let tabId = sessionStorage.getItem('meowmd_tab_id');
         if (!tabId) {
             tabId = 'tab_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
@@ -51,27 +49,21 @@ class UwuMarkdown {
         return tabId;
     }
 
-    setCookie(name, value, days = 30) {
-        const encodedValue = encodeURIComponent(value);
-        const expires = new Date();
-        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-        document.cookie = `${name}=${encodedValue};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
-    }
-
-    getCookie(name) {
-        const nameEQ = name + '=';
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            let cookie = cookies[i].trim();
-            if (cookie.indexOf(nameEQ) === 0) {
-                return decodeURIComponent(cookie.substring(nameEQ.length));
-            }
+    // localStorage helpers (better than cookies - larger storage limit)
+    setStorage(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            console.warn('localStorage save failed:', e);
         }
-        return null;
     }
 
-    deleteCookie(name) {
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+    getStorage(key) {
+        return localStorage.getItem(key);
+    }
+
+    removeStorage(key) {
+        localStorage.removeItem(key);
     }
 
     setupAutoSave() {
@@ -82,36 +74,16 @@ class UwuMarkdown {
         this.autoSaveInterval = setInterval(() => {
             const content = this.input.value;
             if (content) {
-                this.setCookie(`meowmd_content_${this.tabId}`, content);
-                // Clean up old tab cookies to prevent storage bloat
-                this.cleanupOldTabs();
+                this.setStorage(`meowmd_content_${this.tabId}`, content);
             }
-        }, 5000);
+        }, 1000);
     }
 
     restoreFromCookie() {
-        const savedContent = this.getCookie(`meowmd_content_${this.tabId}`);
+        const savedContent = this.getStorage(`meowmd_content_${this.tabId}`);
         if (savedContent !== null) {
             this.input.value = savedContent;
         }
-    }
-
-    cleanupOldTabs() {
-        const allCookies = document.cookie.split(';');
-        const tabIdPattern = /^meowmd_content_tab_/;
-
-        allCookies.forEach(cookie => {
-            const cookieName = cookie.trim().split('=')[0];
-            if (tabIdPattern.test(cookieName)) {
-                const cookieTabId = cookieName.replace('meowmd_content_', '');
-                // Check if this tab still exists in sessionStorage
-                const currentTabId = sessionStorage.getItem('meowmd_tab_id');
-                if (cookieTabId !== currentTabId) {
-                    // This is an old tab cookie - keep it for potential future access
-                    // (tabs can be reopened and should still have their content)
-                }
-            }
-        });
     }
 
     setupEventListeners() {
