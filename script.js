@@ -16,8 +16,10 @@ class UwuMarkdown {
         this.navbar = document.getElementById('navbar');
         this.tabId = this.getOrCreateTabId();
         this.autoSaveInterval = null;
+        this.titleInput = document.getElementById('titleInput');
 
         this.setupEventListeners();
+        this.setupTitleInput();
         this.setupResizer();
         this.setupScrollHandler();
         this.setupScrollToTop();
@@ -86,6 +88,27 @@ class UwuMarkdown {
         }
     }
 
+    setupTitleInput() {
+        // Load saved title
+        const savedTitle = this.getStorage(`meowmd_title_${this.tabId}`);
+        if (savedTitle) {
+            document.title = savedTitle;
+            this.titleInput.value = savedTitle.replace(' - meowmd', '');
+        }
+
+        // Update title on input
+        this.titleInput.addEventListener('input', () => {
+            const customTitle = this.titleInput.value.trim();
+            if (customTitle) {
+                document.title = `${customTitle} - meowmd`;
+                this.setStorage(`meowmd_title_${this.tabId}`, document.title);
+            } else {
+                document.title = 'meowmd - simple markdown editor';
+                this.removeStorage(`meowmd_title_${this.tabId}`);
+            }
+        });
+    }
+
     setupEventListeners() {
         this.input.addEventListener('input', () => this.updatePreview());
 
@@ -151,6 +174,23 @@ class UwuMarkdown {
         let ticking = false;
         const logo = document.getElementById('logo');
 
+        // Initialize logo state based on current scroll position
+        const initLogoState = () => {
+            const scrollTop = document.documentElement.scrollTop;
+            if (scrollTop === 0) {
+                logo.classList.remove('navbar-mode');
+                this.titleInput.style.display = 'block';
+                this.navbar.style.opacity = '0';
+            } else {
+                logo.classList.add('navbar-mode');
+                this.titleInput.style.display = 'none';
+                this.navbar.style.opacity = '1';
+            }
+        };
+
+        // Run on page load to fix refresh with scroll position bug
+        initLogoState();
+
         window.addEventListener('scroll', () => {
             if (!ticking) {
                 requestAnimationFrame(() => {
@@ -159,12 +199,14 @@ class UwuMarkdown {
                     const navbarHeight = this.navbar.offsetHeight;
                     const uiChangeThreshold = heroHeight * 0.05;
 
-                    // Logo/navbar visibility
-                    if (scrollTop > uiChangeThreshold) {
+                    // Logo/navbar visibility - only show logo in hero mode when completely at top
+                    if (scrollTop > 0) {
                         logo.classList.add('navbar-mode');
+                        this.titleInput.style.display = 'none';
                         this.navbar.style.opacity = '1';
                     } else {
                         logo.classList.remove('navbar-mode');
+                        this.titleInput.style.display = 'block';
                         this.navbar.style.opacity = '0';
                     }
 
