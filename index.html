@@ -31,8 +31,10 @@
     </div>
 
     <!-- Logo -->
-    <div class="logo" id="logo">meowmd</div>
-    <input type="text" id="titleInput" class="title-input" placeholder="tab title..." />
+    <div class="logo-wrapper" id="logoWrapper" data-loading="true">
+        <div class="logo" id="logo">meowmd</div>
+        <input type="text" id="titleInput" class="title-input" placeholder="tab title..." />
+    </div>
 
     <!-- Scroll to Top Button -->
     <button class="scroll-to-top" id="scrollToTop" title="back to top">
@@ -47,7 +49,7 @@
 
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
-        <div class="container" id="editorContainer">
+        <div class="container" id="editorContainer" data-loading="true">
             <div class="input-pane" id="inputPane">
                 <div class="input-header">markdown</div>
                 <label for="markdownInput"></label><textarea class="markdown-input" placeholder="# markdown goes here~

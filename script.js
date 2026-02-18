@@ -14,6 +14,7 @@ class UwuMarkdown {
         this.scrollToTopBtn = document.getElementById('scrollToTop');
         this.hero = document.getElementById('hero');
         this.navbar = document.getElementById('navbar');
+        this.logoWrapper = document.getElementById('logoWrapper');
         this.tabId = this.getOrCreateTabId();
         this.autoSaveInterval = null;
         this.titleInput = document.getElementById('titleInput');
@@ -27,6 +28,10 @@ class UwuMarkdown {
         this.setupAutoSave();
         this.restoreFromCookie();
         this.updatePreview();
+
+        // Remove loading state to reveal content
+        this.container.dataset.loading = 'false';
+        this.logoWrapper.dataset.loading = 'false';
     }
 
     getOrCreateTabId() {

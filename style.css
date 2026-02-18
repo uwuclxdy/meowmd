@@ -73,6 +73,25 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
+/* Prevent flash of default content on load */
+.container[data-loading="true"] {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.container[data-loading="true"] .input-pane,
+.container[data-loading="true"] .preview-pane {
+    visibility: hidden;
+}
+
+/* Prevent flash of default content on load - logo */
+.logo-wrapper[data-loading="true"] {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
 /* Header/Navbar */
 .header {
     position: fixed;
