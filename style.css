@@ -488,6 +488,11 @@ body {
 .preview-pane.full-width {
     width: 100%;
     flex: none;
+    margin: 0 auto;
+}
+
+.preview-pane.full-width.narrow-width {
+    width: 60%;
 }
 
 .preview-header {
@@ -527,6 +532,37 @@ body {
 }
 
 .toggle-editor-icon {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.toggle-width-btn {
+    background: var(--ctp-surface0);
+    border: 1px solid var(--ctp-surface0);
+    color: var(--ctp-text);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.toggle-width-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--ctp-base);
+}
+
+.toggle-width-btn.hidden {
+    display: none;
+}
+
+.toggle-width-icon {
     width: 16px;
     height: 16px;
     fill: currentColor;
