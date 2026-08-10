@@ -1,138 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>meowmd - simple markdown editor</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <title>meowmd - a tiny markdown viewer + editor</title>
+    <meta name="description" content="a tiny markdown viewer + editor that autosaves in your browser.">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M5 8l4-4v4M27 8l-4-4v4' fill='%2343ABE5'/%3E%3Ccircle cx='16' cy='19' r='11' fill='%2343ABE5'/%3E%3Ccircle cx='12' cy='20' r='1.6' fill='%2311111B'/%3E%3Ccircle cx='20' cy='20' r='1.6' fill='%2311111B'/%3E%3Cpath d='M12 24.5c1.2 1.1 2.8 1.1 4 0' stroke='%2311111B' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+    <!-- vendored, pinned: marked 9.1.2, dompurify 3.2.4, prism 1.29.0. loaded before first-party js -->
+    <script src="vendor/marked.min.js"></script>
+    <script src="vendor/purify.min.js"></script>
+    <script src="vendor/prism/prism-core.min.js"></script>
+    <script src="vendor/prism/prism-autoloader.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
 
 <body>
 
-    <!-- Grain Texture Overlay -->
-    <div class="grain"></div>
+    <div class="layout">
 
-    <!-- Header/Navbar -->
-    <div class="header" id="navbar">
-        <div class="header-left">
-            <button class="hamburger-btn" id="hamburgerBtn" title="table of contents">
-                <svg class="hamburger-icon" viewBox="0 0 24 24">
-                    <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-            </button>
-            <div class="logo-nav">meowmd</div>
-            <a href="https://github.com/uwuclxdy/meowmd" class="github-link" target="_blank" rel="noopener noreferrer"
-                title="View on GitHub">
-                <svg class="github-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                </svg>
-            </a>
+        <div class="mobile-topbar">
+            <div class="mobile-brand">meowmd</div>
+            <div class="mobile-actions">
+                <button class="btn btn-icon theme-toggle" type="button" title="toggle theme" aria-label="toggle dark / light theme">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="8" cy="8" r="3.2" />
+                        <path d="M8 1.5v1.5M8 13v1.5M1.5 8h1.5M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1" />
+                    </svg>
+                </button>
+                <button class="hamburger" id="hamburgerBtn" aria-label="open table of contents" aria-controls="tocSidebar"
+                    aria-expanded="false">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round">
+                        <path d="M2 4h12M2 8h12M2 12h12" />
+                    </svg>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Logo -->
-    <div class="logo-wrapper" id="logoWrapper" data-loading="true">
-        <div class="logo" id="logo">meowmd</div>
-        <input type="text" id="titleInput" class="title-input" placeholder="tab title..." />
-    </div>
+        <div class="sidebar-overlay" id="overlay"></div>
 
-    <!-- Scroll to Top Button -->
-    <button class="scroll-to-top" id="scrollToTop" title="back to top">
-        <svg class="scroll-to-top-icon" viewBox="0 0 16 16">
-            <path d="M8 3.5L13.5 9H10v4H6V9H2.5L8 3.5z" />
-        </svg>
-    </button>
+        <nav class="sidebar" id="tocSidebar" aria-label="table of contents">
+            <div class="sidebar-logo">
+                <div class="logo-name">meowmd</div>
+                <div class="logo-version">local-first markdown</div>
+            </div>
+            <div class="nav-group" id="tocGroup">
+                <div class="nav-group-label">contents</div>
+                <div class="nav-indicator" id="navIndicator"></div>
+                <div id="tocContent">
+                    <p class="toc-empty">start typing to see headings...</p>
+                </div>
+            </div>
+        </nav>
 
-    <!-- Hero Section -->
-    <section class="hero" id="hero">
-    </section>
+        <main class="main-col" id="mainCol">
+            <nav class="navbar" id="navbar">
+                <div class="navbar-brand">
+                    <div class="logo-name">meowmd</div>
+                </div>
+                <div class="navbar-actions">
+                    <button class="btn btn-icon theme-toggle" type="button" title="toggle theme" aria-label="toggle dark / light theme">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="8" cy="8" r="3.2" />
+                            <path d="M8 1.5v1.5M8 13v1.5M1.5 8h1.5M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1" />
+                        </svg>
+                    </button>
+                    <a class="btn btn-icon" href="https://github.com/uwuclxdy/meowmd" target="_blank" rel="noopener noreferrer"
+                        title="view on github" aria-label="view on github">
+                        <svg viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                        </svg>
+                    </a>
+                </div>
+            </nav>
 
-    <!-- Main Content -->
-    <div class="main-content" id="mainContent">
-        <div class="container" id="editorContainer" data-loading="true">
-            <div class="input-pane" id="inputPane">
-                <div class="input-header">markdown</div>
-                <label for="markdownInput"></label><textarea class="markdown-input" placeholder="# markdown goes here~
+            <section class="hero" id="hero">
+                <div class="label hero-eyebrow">local-first markdown</div>
+                <h1 class="hero-logo" id="logo">meowmd</h1>
+                <input type="text" id="titleInput" class="input hero-title" placeholder="document title"
+                    spellcheck="false" autocomplete="off">
+                <p class="hero-lede">a tiny markdown viewer + editor. autosaves as you type.</p>
+            </section>
+
+            <div class="editor-wrap">
+                <div class="editor-shell" id="editorContainer">
+                    <div class="input-pane" id="inputPane">
+                        <div class="pane-header">
+                            <span class="label">markdown</span>
+                        </div>
+                        <textarea id="markdownInput" class="markdown-input" spellcheck="false" placeholder="# markdown goes here~
 
 ## some stuff you can do
 - **bold** and *italic* text
 - [links](https://example.com)
-- `code snippets` and blocks
-- > quotes look nice too
-- tables, lists, whatever
+- `code` and blocks
+- > quotes, tables, lists
 
-```js
-// syntax highlighting works
-const editor = 'pretty neat';
-console.log(editor);
-```
+just start typing :3"></textarea>
+                    </div>
 
-just start typing :3" id="markdownInput"></textarea>
-            </div>
+                    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical"
+                        title="drag to resize" tabindex="0"></div>
 
-            <div class="resizer" id="resizer"></div>
-
-            <div class="preview-pane" id="previewPane">
-                <div class="preview-header">
-                    <button class="toggle-editor-btn" id="toggleEditorBtn" title="hide editor">
-                        <svg class="toggle-editor-icon fullscreen-icon" viewBox="0 0 24 24">
-                            <path
-                                d="M21.7092 2.29502C21.8041 2.3904 21.8757 2.50014 21.9241 2.61722C21.9727 2.73425 21.9996 2.8625 22 2.997L22 3V9C22 9.55228 21.5523 10 21 10C20.4477 10 20 9.55228 20 9V5.41421L14.7071 10.7071C14.3166 11.0976 13.6834 11.0976 13.2929 10.7071C12.9024 10.3166 12.9024 9.68342 13.2929 9.29289L18.5858 4H15C14.4477 4 14 3.55228 14 3C14 2.44772 14.4477 2 15 2H20.9998C21.2749 2 21.5242 2.11106 21.705 2.29078L21.7092 2.29502Z" />
-                            <path
-                                d="M10.7071 14.7071L5.41421 20H9C9.55228 20 10 20.4477 10 21C10 21.5523 9.55228 22 9 22H3.00069L2.997 22C2.74301 21.9992 2.48924 21.9023 2.29502 21.7092L2.29078 21.705C2.19595 21.6096 2.12432 21.4999 2.07588 21.3828C2.02699 21.2649 2 21.1356 2 21V15C2 14.4477 2.44772 14 3 14C3.55228 14 4 14.4477 4 15V18.5858L9.29289 13.2929C9.68342 12.9024 10.3166 12.9024 10.7071 13.2929C11.0976 13.6834 11.0976 14.3166 10.7071 14.7071Z" />
-                        </svg>
-                    </button>
-                    <button class="toggle-width-btn hidden" id="toggleWidthBtn" title="toggle width">
-                        <svg class="toggle-width-icon" viewBox="0 0 24 24">
-                            <path d="M3 8L7 4V7H17V4L21 8L17 12V9H7V12L3 8Z" />
-                        </svg>
-                    </button>
-                    <span>preview</span>
+                    <div class="preview-pane" id="previewPane">
+                        <div class="pane-header">
+                            <button class="btn btn-icon" id="toggleEditorBtn" type="button" title="hide editor"
+                                aria-label="hide editor">
+                                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round">
+                                    <path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3" />
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon hidden" id="toggleWidthBtn" type="button" title="narrow preview"
+                                aria-label="narrow preview">
+                                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                                    stroke-linecap="round">
+                                    <path d="M6 6H3V3M10 6h3V3M6 10H3v3M10 10h3v3" />
+                                </svg>
+                            </button>
+                            <span class="label">preview</span>
+                        </div>
+                        <div class="preview-content" id="previewContent"></div>
+                    </div>
                 </div>
-                <div class="preview-content" id="previewContent"># markdown goes here~
-
-                    ## some stuff you can do
-                    - **bold** and *italic* text
-                    - [links](https://example.com)
-                    - `code snippets` and blocks
-                    - > quotes look nice too
-                    - tables, lists, whatever
-
-                    ```js
-                    // syntax highlighting works
-                    const editor = 'pretty neat';
-                    console.log(editor);
-                    ```
-
-                    just start typing :3</div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- TOC Sidebar Drawer -->
-    <div class="toc-drawer" id="tocDrawer">
-        <div class="toc-drawer-header">
-            <div class="toc-drawer-title">table of contents</div>
-            <button class="toc-close-btn" id="tocCloseBtn">
-                <svg viewBox="0 0 24 24">
-                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-            </button>
-        </div>
-        <div class="toc-drawer-content" id="tocContent">
-            <p class="toc-empty">start typing to see headings...</p>
-        </div>
-    </div>
+    <button class="scroll-to-top" id="scrollToTop" type="button" title="back to top" aria-label="back to top">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M3 10l5-5 5 5" />
+        </svg>
+    </button>
 
-    <!-- Overlay -->
-    <div class="overlay" id="overlay"></div>
+    <div class="toast-stack" id="toastStack"></div>
 
 </body>
 
