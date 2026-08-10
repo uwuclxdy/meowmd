@@ -42,24 +42,26 @@
 
         <div class="sidebar-overlay" id="overlay"></div>
 
-        <nav class="sidebar" id="tocSidebar" aria-label="table of contents">
-            <div class="sidebar-logo">
-                <div class="logo-name">meowmd</div>
-                <div class="logo-version">local-first markdown</div>
-            </div>
-            <div class="nav-group" id="tocGroup">
-                <div class="nav-group-label">contents</div>
-                <div class="nav-indicator" id="navIndicator"></div>
-                <div id="tocContent">
-                    <p class="toc-empty">start typing to see headings...</p>
+        <div class="sidebar" id="tocSidebar">
+            <div class="sidebar-body">
+                <div class="nav-group" id="tocGroup">
+                    <div class="nav-group-label">contents</div>
+                    <div class="nav-indicator" id="navIndicator"></div>
+                    <div id="tocContent">
+                        <p class="toc-empty">start typing to see headings...</p>
+                    </div>
                 </div>
             </div>
-        </nav>
+        </div>
 
         <main class="main-col" id="mainCol">
-            <nav class="navbar" id="navbar">
+            <nav class="navbar" id="navbar" aria-label="primary">
                 <div class="navbar-brand">
                     <div class="logo-name">meowmd</div>
+                </div>
+                <div class="navbar-title">
+                    <input type="text" id="titleInput" class="input" placeholder="document title"
+                        aria-label="document title" spellcheck="false" autocomplete="off">
                 </div>
                 <div class="navbar-actions">
                     <button class="btn btn-icon theme-toggle" type="button" title="toggle theme" aria-label="toggle dark / light theme">
@@ -77,14 +79,6 @@
                     </a>
                 </div>
             </nav>
-
-            <section class="hero" id="hero">
-                <div class="label hero-eyebrow">local-first markdown</div>
-                <h1 class="hero-logo" id="logo">meowmd</h1>
-                <input type="text" id="titleInput" class="input hero-title" placeholder="document title"
-                    aria-label="document title" spellcheck="false" autocomplete="off">
-                <p class="hero-lede">a tiny markdown viewer + editor. autosaves as you type.</p>
-            </section>
 
             <div class="editor-wrap">
                 <div class="editor-shell" id="editorContainer">
