@@ -409,7 +409,12 @@ input.btn { line-height: 30px; }
   width: 0;
   border-right-color: transparent;
 }
-.sidebar-body { flex: 1; min-height: 0; overflow-y: auto; }
+.sidebar-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: var(--space-5);
+}
 .logo-name {
   font: 550 var(--text-md)/1 var(--font-sans);
   color: var(--text);
