@@ -413,7 +413,7 @@ input.btn { line-height: 30px; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-top: var(--space-5);
+  padding-top: var(--space-3);
 }
 .logo-name {
   font: 550 var(--text-md)/1 var(--font-sans);
