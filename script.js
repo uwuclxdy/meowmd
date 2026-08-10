@@ -73,18 +73,27 @@ just start typing :3`;
         },
     };
     function getTabId() {
-        const navType = performance.getEntriesByType('navigation')[0]?.type;
-        if (navType === 'navigate') {
+        const mint = () => {
             const id = 'tab_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
             session.set('meowmd_tab_id', id);
+            clearOrphanedTabs();
             return id;
-        }
+        };
+        const navType = performance.getEntriesByType('navigation')[0]?.type;
+        if (navType === 'navigate') return mint();
         let id = session.get('meowmd_tab_id');
-        if (!id) {
-            id = 'tab_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
-            session.set('meowmd_tab_id', id);
-        }
-        return id;
+        return id || mint();
+    }
+
+    function clearOrphanedTabs() {
+        try {
+            const orphans = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && /^meowmd_(content|title)_tab_/.test(key)) orphans.push(key);
+            }
+            orphans.forEach((k) => localStorage.removeItem(k));
+        } catch { /* private mode */ }
     }
     const tabId = getTabId();
 
@@ -134,16 +143,19 @@ just start typing :3`;
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[c]));
 
+    const collapsedBlocks = new Set();
+
     function processCodeBlocks(html) {
         return html.replace(/<pre><code(?: class="language-(\w+)")?>([\s\S]*?)<\/code><\/pre>/g,
             (match, lang, codeHtml) => {
                 const language = lang || 'text';
                 const raw = escapeHtml(decodeHtml(codeHtml));
+                const collapsed = collapsedBlocks.has(raw);
                 return `<div class="code-block">
-                    <div class="code-header" role="button" tabindex="0" aria-expanded="true"
-                        aria-label="collapse code block (${language})">
+                    <div class="code-header" role="button" tabindex="0" aria-expanded="${!collapsed}"
+                        aria-label="${collapsed ? 'expand' : 'collapse'} code block (${language})">
                         <div class="code-header-left">
-                            <span class="collapse-arrow"></span>
+                            <span class="collapse-arrow${collapsed ? ' collapsed' : ''}"></span>
                             <span class="language-label">${language}</span>
                         </div>
                         <button class="copy-button" type="button" title="copy code" aria-label="copy code">
@@ -151,7 +163,7 @@ just start typing :3`;
                                 stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9"/><path d="M10.5 5.5v-3h-9v9h3"/></svg>
                         </button>
                     </div>
-                    <div class="code-content" data-raw="${raw}">
+                    <div class="code-content${collapsed ? ' collapsed' : ''}" data-raw="${raw}"${collapsed ? ' style="max-height:0px"' : ''}>
                         <pre><code class="language-${language}">${codeHtml}</code></pre>
                     </div>
                 </div>`;
@@ -298,7 +310,13 @@ just start typing :3`;
         const block = header.closest('.code-block');
         const content = block.querySelector('.code-content');
         const arrow = header.querySelector('.collapse-arrow');
+        const raw = content.dataset.raw || '';
         const collapsed = content.classList.toggle('collapsed');
+        if (collapsed) {
+            collapsedBlocks.add(raw);
+        } else {
+            collapsedBlocks.delete(raw);
+        }
         arrow.classList.toggle('collapsed', collapsed);
         header.setAttribute('aria-expanded', String(!collapsed));
         header.setAttribute('aria-label', `${collapsed ? 'expand' : 'collapse'} code block`);
