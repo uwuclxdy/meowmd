@@ -345,6 +345,24 @@ just start typing :3`;
         if (e.target.closest('.toc-link') && window.innerWidth <= 768) closeDrawer();
     });
 
+    /* ---------- sidebar collapse (desktop) ---------- */
+    const layoutEl = document.querySelector('.layout');
+    const sidebarToggle = $('#sidebarToggle');
+    if (sidebarToggle) {
+        const setSidebarCollapsed = (collapsed) => {
+            layoutEl.classList.toggle('sidebar-collapsed', collapsed);
+            sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+            sidebarToggle.title = collapsed ? 'show table of contents' : 'hide table of contents';
+            sidebarToggle.setAttribute('aria-label', collapsed ? 'show table of contents' : 'hide table of contents');
+        };
+        setSidebarCollapsed(storage.get('meowmd_sidebar') === 'collapsed');
+        sidebarToggle.addEventListener('click', () => {
+            const collapsed = layoutEl.classList.toggle('sidebar-collapsed');
+            storage.set('meowmd_sidebar', collapsed ? 'collapsed' : 'open');
+            setSidebarCollapsed(collapsed);
+        });
+    }
+
     /* ---------- editor toggle ---------- */
     toggleEditorBtn.addEventListener('click', () => {
         const isHidden = inputPane.classList.toggle('hidden');
