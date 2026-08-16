@@ -46,6 +46,9 @@
     const scrollToTopBtn = $('#scrollToTop');
     const titleInput = $('#titleInput');
     const toastStack = $('#toastStack');
+    const editorHighlight = $('#editorHighlight');
+    const editorHighlightCode = $('#editorHighlightCode');
+    const editorHighlightWrap = $('.editor-highlight-wrap');
 
     const DEFAULT_MARKDOWN = `# markdown goes here~
 
@@ -73,29 +76,39 @@ just start typing :3`;
         },
     };
     function getTabId() {
-        const mint = () => {
-            const id = 'tab_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
-            session.set('meowmd_tab_id', id);
-            clearOrphanedTabs();
-            return id;
-        };
-        const navType = performance.getEntriesByType('navigation')[0]?.type;
-        if (navType === 'navigate') return mint();
         let id = session.get('meowmd_tab_id');
-        return id || mint();
+        if (id) return id;
+        id = 'tab_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();
+        session.set('meowmd_tab_id', id);
+        return id;
     }
 
     function clearOrphanedTabs() {
+        const WEEK = 7 * 24 * 60 * 60 * 1000;
         try {
-            const orphans = [];
+            const now = Date.now();
+            const byTab = {};
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && /^meowmd_(content|title)_tab_/.test(key)) orphans.push(key);
+                const m = key && /^meowmd_(content|title|mtime)_(.+)$/.exec(key);
+                if (!m) continue;
+                if (!byTab[m[2]]) byTab[m[2]] = [];
+                byTab[m[2]].push(key);
             }
-            orphans.forEach((k) => localStorage.removeItem(k));
+            Object.keys(byTab).forEach((id) => {
+                if (id === tabId) return;
+                const mtime = parseInt(storage.get(`meowmd_mtime_${id}`), 10);
+                if (Number.isFinite(mtime) && now - mtime <= WEEK) return;
+                byTab[id].forEach((k) => storage.remove(k));
+            });
         } catch { /* private mode */ }
     }
     const tabId = getTabId();
+    clearOrphanedTabs();
+
+    function touch() {
+        storage.set(`meowmd_mtime_${tabId}`, String(Date.now()));
+    }
 
     const saved = storage.get(`meowmd_content_${tabId}`);
     if (saved !== null && saved !== undefined) {
@@ -119,24 +132,64 @@ just start typing :3`;
             document.title = 'meowmd - a tiny markdown viewer + editor';
             storage.remove(`meowmd_title_${tabId}`);
         }
+        touch();
     });
 
     let autosaveTimer = null;
+    function flushAutosave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        storage.set(`meowmd_content_${tabId}`, input.value);
+        touch();
+    }
     input.addEventListener('input', () => {
         renderPreview();
+        renderEditorHighlight();
+        syncEditorHighlightScroll();
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => {
             storage.set(`meowmd_content_${tabId}`, input.value);
+            touch();
         }, 800);
+    });
+    window.addEventListener('pagehide', flushAutosave);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushAutosave();
     });
 
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
             storage.set(`meowmd_content_${tabId}`, input.value);
+            touch();
             showToast('success', 'saved', 'autosaved to this browser');
         }
     });
+
+    /* ---------- editor highlight ---------- */
+    function renderEditorHighlight() {
+        if (!editorHighlightCode || !window.Prism || !Prism.languages.markdown) {
+            editorHighlightWrap.classList.add('no-highlight');
+            return;
+        }
+        let html;
+        try {
+            html = Prism.highlight(input.value, Prism.languages.markdown, 'markdown');
+        } catch {
+            html = escapeHtml(input.value);
+        }
+        editorHighlightCode.innerHTML = html;
+        editorHighlightWrap.classList.remove('no-highlight');
+    }
+
+    function syncEditorHighlightScroll() {
+        if (!editorHighlight) return;
+        editorHighlight.style.transform = `translate(${-input.scrollLeft}px, ${-input.scrollTop}px)`;
+    }
+
+    input.addEventListener('scroll', syncEditorHighlightScroll, { passive: true });
+    const themeObserver = new MutationObserver(() => renderEditorHighlight());
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     /* ---------- rendering ---------- */
     const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({
@@ -146,11 +199,11 @@ just start typing :3`;
     const collapsedBlocks = new Set();
 
     function processCodeBlocks(html) {
-        return html.replace(/<pre><code(?: class="language-(\w+)")?>([\s\S]*?)<\/code><\/pre>/g,
+        return html.replace(/<pre><code(?: class="language-([\w+#.-]+)")?>([\s\S]*?)<\/code><\/pre>/g,
             (match, lang, codeHtml) => {
                 const language = lang || 'text';
-                const raw = escapeHtml(decodeHtml(codeHtml));
-                const collapsed = collapsedBlocks.has(raw);
+                const text = escapeHtml(decodeHtml(codeHtml));
+                const collapsed = collapsedBlocks.has(text);
                 return `<div class="code-block">
                     <div class="code-header" role="button" tabindex="0" aria-expanded="${!collapsed}"
                         aria-label="${collapsed ? 'expand' : 'collapse'} code block (${language})">
@@ -163,17 +216,19 @@ just start typing :3`;
                                 stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9"/><path d="M10.5 5.5v-3h-9v9h3"/></svg>
                         </button>
                     </div>
-                    <div class="code-content${collapsed ? ' collapsed' : ''}" data-raw="${raw}"${collapsed ? ' style="max-height:0px"' : ''}>
-                        <pre><code class="language-${language}">${codeHtml}</code></pre>
+                    <div class="code-content${collapsed ? ' collapsed' : ''}" data-raw="${text}"${collapsed ? ' style="max-height:0px"' : ''}>
+                        <pre><code class="language-${language}">${text}</code></pre>
                     </div>
                 </div>`;
             });
     }
 
     function decodeHtml(s) {
-        const ta = document.createElement('textarea');
-        ta.innerHTML = s;
-        return ta.value;
+        const el = document.createElement('span');
+        return s.replace(/&(#\d+|#x[\da-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (ent) => {
+            el.innerHTML = ent;
+            return el.textContent;
+        });
     }
 
     function renderPreview() {
@@ -189,13 +244,51 @@ just start typing :3`;
             preview.innerHTML = '<p>could not parse markdown.</p>';
             return;
         }
-        preview.innerHTML = processCodeBlocks(DOMPurify.sanitize(html));
+        preview.innerHTML = processCodeBlocks(DOMPurify.sanitize(html, { FORBID_ATTR: ['style'] }));
         if (window.Prism) {
             preview.querySelectorAll('pre code[class*="language-"]').forEach((block) => {
                 Prism.highlightElement(block);
             });
         }
+        buildCallouts(preview);
         buildToc();
+    }
+
+    function buildCallouts(preview) {
+        const types = {
+            NOTE: ['info', 'Note'],
+            TIP: ['success', 'Tip'],
+            IMPORTANT: ['info', 'Important'],
+            WARNING: ['warning', 'Warning'],
+            CAUTION: ['danger', 'Caution'],
+        };
+        preview.querySelectorAll('blockquote').forEach((bq) => {
+            const first = bq.firstElementChild;
+            if (!first || first.tagName !== 'P') return;
+            const textNode = first.firstChild;
+            if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
+            const m = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i.exec(textNode.textContent);
+            if (!m) return;
+            const [semantic, label] = types[m[1].toUpperCase()];
+            const rest = textNode.textContent.slice(m[0].length).replace(/^\s+/, '');
+            if (rest) {
+                textNode.textContent = rest;
+            } else {
+                textNode.remove();
+                if (!first.childNodes.length) first.remove();
+            }
+            const callout = document.createElement('div');
+            callout.className = `callout callout-${semantic}`;
+            const title = document.createElement('div');
+            title.className = 'callout-title';
+            title.textContent = label;
+            const body = document.createElement('div');
+            body.className = 'callout-body';
+            while (bq.firstChild) body.appendChild(bq.firstChild);
+            callout.appendChild(title);
+            callout.appendChild(body);
+            bq.replaceWith(callout);
+        });
     }
 
     function buildToc() {
@@ -209,7 +302,7 @@ just start typing :3`;
         }
 
         headings.forEach((heading, index) => {
-            heading.id = `heading-${index}`;
+            if (!heading.id) heading.id = `heading-${index}`;
             const level = parseInt(heading.tagName.charAt(1), 10);
             const text = heading.textContent.trim();
             const li = document.createElement('li');
@@ -455,4 +548,5 @@ just start typing :3`;
         Prism.plugins.autoloader.languages_path = 'vendor/prism/components/';
     }
     renderPreview();
+    renderEditorHighlight();
 })();

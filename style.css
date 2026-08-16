@@ -170,6 +170,8 @@
   --accent:      #2E93B5;
   --accent-hover:#1F7F9F;
   --accent-press:#166D8A;
+  --accent-soft: color-mix(in srgb, #2E93B5 10%, transparent);
+  --accent-ring: color-mix(in srgb, #2E93B5 42%, transparent);
 
   --success:     #40A02B;
   --warning:     #DF8E1D;
@@ -622,20 +624,87 @@ input.btn { line-height: 30px; }
 }
 .pane-header .label { margin-left: var(--space-2); }
 
-.markdown-input {
+.editor-highlight-wrap {
   flex: 1;
   min-height: 0;
-  background: var(--bg-sunken);
+  position: relative;
+  overflow: hidden;
+}
+
+.markdown-input {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
   border: none;
+  color: transparent;
+  caret-color: var(--text);
+  -webkit-text-fill-color: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  letter-spacing: normal;
+  padding: var(--space-3);
+  tab-size: 8;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  resize: none;
+  outline: none;
+  scrollbar-gutter: stable;
+  z-index: 1;
+}
+.markdown-input::placeholder {
+  color: var(--text-faint);
+  -webkit-text-fill-color: var(--text-faint);
+}
+.markdown-input::selection {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  background: var(--accent-soft);
+}
+.editor-highlight-wrap.no-highlight .markdown-input {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+}
+
+.editor-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: none;
+  background: transparent;
   color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   line-height: 1.55;
-  padding: var(--space-3);
-  resize: none;
-  outline: none;
+  letter-spacing: normal;
+  tab-size: 8;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  pointer-events: none;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  will-change: transform;
 }
-.markdown-input::placeholder { color: var(--text-faint); }
+.editor-highlight code {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+/* markdown token colors in the editor */
+.editor-highlight .token.title { color: var(--prism-function); }
+.editor-highlight .token.bold { font-weight: 600; color: var(--prism-keyword); }
+.editor-highlight .token.italic { font-style: italic; color: var(--prism-builtin); }
+.editor-highlight .token.strike { text-decoration: line-through; color: var(--prism-comment); }
+.editor-highlight .token.code-snippet { color: var(--prism-string); }
+.editor-highlight .token.code-language { color: var(--prism-comment); }
 
 .resizer {
   width: 5px;
@@ -716,6 +785,7 @@ input.btn { line-height: 30px; }
 .preview-content ul,
 .preview-content ol { margin: 0 0 1em; padding-left: 1.5em; }
 .preview-content li { margin-bottom: 0.25em; }
+.preview-content input[type="checkbox"] { accent-color: var(--accent); }
 
 .preview-content blockquote {
   border-left: 3px solid var(--line-strong);
@@ -723,6 +793,44 @@ input.btn { line-height: 30px; }
   padding: 0.1em 0 0.1em var(--space-4);
   color: var(--text-dim);
 }
+
+/* ---- Callouts ---- */
+.callout {
+  position: relative;
+  margin: 0 0 1em;
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 18px);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+}
+.callout::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--space-3) + 0.5em);
+  left: var(--space-3);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.callout-info { border-left-color: var(--info); background: color-mix(in srgb, var(--info) 6%, var(--bg-raised)); }
+.callout-info::before { background: var(--info); }
+.callout-success { border-left-color: var(--success); background: color-mix(in srgb, var(--success) 6%, var(--bg-raised)); }
+.callout-success::before { background: var(--success); }
+.callout-warning { border-left-color: var(--warning); background: color-mix(in srgb, var(--warning) 6%, var(--bg-raised)); }
+.callout-warning::before { background: var(--warning); }
+.callout-danger { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 6%, var(--bg-raised)); }
+.callout-danger::before { background: var(--danger); }
+.callout-title {
+  font-weight: 600;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: var(--space-2);
+}
+.callout-body { color: var(--text-muted); }
+.callout-body > :last-child { margin-bottom: 0; }
 
 .preview-content a { color: var(--accent); text-decoration: none; }
 .preview-content a:hover { text-decoration: underline; }
