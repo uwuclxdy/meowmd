@@ -619,6 +619,7 @@ input.btn { line-height: 30px; }
   overflow: hidden;
 }
 .input-pane.hidden { width: 0; min-width: 0; border-right: none; opacity: 0; }
+body.resizing .input-pane { transition: none; }
 
 .pane-header {
   display: flex;
