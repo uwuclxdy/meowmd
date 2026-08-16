@@ -615,10 +615,13 @@ input.btn { line-height: 30px; }
   flex-shrink: 0;
   background: var(--bg-sunken);
   border-right: 1px solid var(--line);
-  transition: width var(--dur-base) var(--ease), opacity var(--dur-fast) var(--ease);
+  transition:
+    width var(--dur-base) var(--ease),
+    min-width var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    border-right-width var(--dur-base) var(--ease);
   overflow: hidden;
 }
-.input-pane.hidden { width: 0; min-width: 0; border-right: none; opacity: 0; }
 body.resizing .input-pane { transition: none; }
 
 .pane-header {
@@ -772,14 +775,14 @@ body.resizing .input-pane { transition: none; }
   background: var(--line);
   position: relative;
   z-index: 5;
-  transition: background-color var(--dur-fast) var(--ease);
+  transition: width var(--dur-base) var(--ease), background-color var(--dur-fast) var(--ease);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 .resizer:hover { background: var(--accent); }
 .resizer:active { background: var(--accent); }
-.resizer.hidden { display: none; }
 
 .preview-pane {
   flex: 1;
@@ -788,10 +791,45 @@ body.resizing .input-pane { transition: none; }
   flex-direction: column;
   background: var(--bg);
   overflow: hidden;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    min-width var(--dur-base) var(--ease);
 }
+
+/* view modes: the collapsed pane animates to zero width, the other pane fills the freed space */
 .editor-shell[data-mode="markdown"] .input-pane { width: 100%; }
-.editor-shell[data-mode="preview"] .preview-pane { width: 100%; flex: none; }
-.editor-shell[data-mode="preview"] .preview-pane.narrow-width { width: 60%; margin: 0 auto; }
+.editor-shell[data-mode="markdown"] .preview-pane {
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    min-width var(--dur-base) var(--ease),
+    visibility 0s var(--dur-base);
+}
+.editor-shell[data-mode="markdown"] .resizer,
+.editor-shell[data-mode="preview"] .resizer {
+  width: 0;
+  visibility: hidden;
+  transition:
+    width var(--dur-base) var(--ease),
+    background-color var(--dur-fast) var(--ease),
+    visibility 0s var(--dur-base);
+}
+.editor-shell[data-mode="preview"] .input-pane {
+  width: 0;
+  min-width: 0;
+  border-right-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    width var(--dur-base) var(--ease),
+    min-width var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    border-right-width var(--dur-base) var(--ease),
+    visibility 0s var(--dur-base);
+}
+.editor-shell[data-mode="preview"] .preview-pane.narrow-width { flex: none; width: 60%; margin: 0 auto; }
 
 .preview-content {
   flex: 1;
@@ -1208,9 +1246,24 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
     flex-shrink: 0;
     border-right: none;
     border-bottom: 1px solid var(--line);
+    transition:
+      height var(--dur-base) var(--ease),
+      opacity var(--dur-base) var(--ease),
+      border-bottom-width var(--dur-base) var(--ease);
   }
-  .input-pane.hidden { height: 0; min-height: 0; border-bottom: none; }
   .editor-shell[data-mode="markdown"] .input-pane { height: 100%; }
+  .editor-shell[data-mode="preview"] .input-pane {
+    height: 0;
+    min-height: 0;
+    border-bottom-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      height var(--dur-base) var(--ease),
+      opacity var(--dur-base) var(--ease),
+      border-bottom-width var(--dur-base) var(--ease),
+      visibility 0s var(--dur-base);
+  }
   .preview-pane {
     flex: 1;
     min-width: 0;

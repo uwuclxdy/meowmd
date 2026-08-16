@@ -595,12 +595,14 @@ just start typing :3`;
 
     /* ---------- view modes ---------- */
     const MODES = ['split', 'markdown', 'preview'];
+    let currentMode = 'split';
     let savedEditorTop = 0;
     let savedPreviewTop = 0;
     function applyMode(mode) {
         if (!MODES.includes(mode)) mode = 'split';
-        if (!inputPane.classList.contains('hidden')) savedEditorTop = input.scrollTop;
-        if (!previewPane.classList.contains('hidden')) savedPreviewTop = preview.scrollTop;
+        if (currentMode !== 'preview') savedEditorTop = input.scrollTop;
+        if (currentMode !== 'markdown') savedPreviewTop = preview.scrollTop;
+        currentMode = mode;
         editorContainer.dataset.mode = mode;
         if (mode !== 'split') {
             inputPane.style.width = '';
@@ -608,14 +610,9 @@ just start typing :3`;
             const savedSplit = storage.get('meowmd_split');
             if (savedSplit) inputPane.style.width = savedSplit;
         }
-        const split = mode === 'split';
-        const markdown = mode === 'markdown';
         const previewMode = mode === 'preview';
-        inputPane.classList.toggle('hidden', previewMode);
-        previewPane.classList.toggle('hidden', markdown);
-        resizer.classList.toggle('hidden', !split);
         toggleWidthBtn.classList.toggle('hidden', !previewMode);
-        if (split) previewPane.classList.remove('narrow-width');
+        if (mode === 'split') previewPane.classList.remove('narrow-width');
         modeBtns.forEach((btn) => {
             const active = btn.dataset.mode === mode;
             btn.classList.toggle('active', active);
