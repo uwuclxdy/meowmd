@@ -16,6 +16,11 @@
     <script src="vendor/prism/prism-autoloader.min.js"></script>
     <script src="vendor/prism/components/prism-markup.min.js"></script>
     <script src="vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="vendor/prism/components/prism-clike.min.js"></script>
+    <script src="vendor/prism/components/prism-c.min.js"></script>
+    <script src="vendor/prism/components/prism-objectivec.min.js"></script>
+    <script src="vendor/prism/components/prism-fsharp.min.js"></script>
+    <script src="vendor/prism/components/prism-visual-basic.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
@@ -122,6 +127,7 @@
                     <div class="input-pane" id="inputPane">
                         <div class="pane-header">
                             <span class="label">markdown</span>
+                            <span class="word-count" id="wordCount"></span>
                         </div>
                         <div class="editor-highlight-wrap">
                             <pre class="editor-highlight" id="editorHighlight" aria-hidden="true"><code class="language-markdown" id="editorHighlightCode"></code></pre>

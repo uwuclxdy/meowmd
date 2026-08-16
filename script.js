@@ -52,6 +52,7 @@
     const editorHighlight = $('#editorHighlight');
     const editorHighlightCode = $('#editorHighlightCode');
     const editorHighlightWrap = $('.editor-highlight-wrap');
+    const wordCountEl = $('#wordCount');
 
     const DEFAULT_MARKDOWN = `# markdown goes here~
 
@@ -138,6 +139,14 @@ just start typing :3`;
         touch();
     });
 
+    function updateWordCount() {
+        if (!wordCountEl) return;
+        const text = input.value;
+        const words = (text.trim().match(/\S+/g) || []).length;
+        const chars = text.length;
+        wordCountEl.textContent = `${words} ${words === 1 ? 'word' : 'words'} · ${chars} ${chars === 1 ? 'char' : 'chars'}`;
+    }
+
     let autosaveTimer = null;
     function flushAutosave() {
         clearTimeout(autosaveTimer);
@@ -149,6 +158,7 @@ just start typing :3`;
         renderPreview();
         renderEditorHighlight();
         syncEditorHighlightScroll();
+        updateWordCount();
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => {
             storage.set(`meowmd_content_${tabId}`, input.value);
@@ -160,12 +170,73 @@ just start typing :3`;
         if (document.visibilityState === 'hidden') flushAutosave();
     });
 
+    function setInputRange(text, start, end, selStart, selEnd) {
+        input.setRangeText(text, start, end, 'end');
+        input.setSelectionRange(selStart, selEnd);
+        input.focus();
+        input.dispatchEvent(new Event('input'));
+    }
+
+    function wrapSelection(before, after, placeholder) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const selected = input.value.slice(start, end);
+        if (selected) {
+            setInputRange(before + selected + after, start, end,
+                start + before.length, start + before.length + selected.length);
+        } else {
+            setInputRange(before + placeholder + after, start, end,
+                start + before.length, start + before.length + placeholder.length);
+        }
+    }
+
+    function applyLink() {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const selected = input.value.slice(start, end);
+        if (selected) {
+            setInputRange(`[${selected}](url)`, start, end, start + 1, start + 1 + selected.length);
+        } else {
+            setInputRange('[text](url)', start, end, start + 7, start + 10);
+        }
+    }
+
+    function applyInlineCode() {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const selected = input.value.slice(start, end);
+        if (selected && selected.includes('\n')) {
+            setInputRange('```\n' + selected + '\n```', start, end,
+                start + 4, start + 4 + selected.length);
+        } else if (selected) {
+            setInputRange('`' + selected + '`', start, end, start + 1, start + 1 + selected.length);
+        } else {
+            setInputRange('`code`', start, end, start + 1, start + 5);
+        }
+    }
+
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
             storage.set(`meowmd_content_${tabId}`, input.value);
             touch();
             showToast('success', 'saved', 'autosaved to this browser');
+            return;
+        }
+        if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || document.activeElement !== input) return;
+        const k = e.key.toLowerCase();
+        if (k === 'b') {
+            e.preventDefault();
+            wrapSelection('**', '**', 'text');
+        } else if (k === 'i') {
+            e.preventDefault();
+            wrapSelection('*', '*', 'text');
+        } else if (k === 'k') {
+            e.preventDefault();
+            applyLink();
+        } else if (e.key === '`' || e.code === 'Backquote') {
+            e.preventDefault();
+            applyInlineCode();
         }
     });
 
@@ -187,7 +258,8 @@ just start typing :3`;
 
     function syncEditorHighlightScroll() {
         if (!editorHighlight) return;
-        editorHighlight.style.transform = `translate(${-input.scrollLeft}px, ${-input.scrollTop}px)`;
+        editorHighlight.scrollTop = input.scrollTop;
+        editorHighlight.scrollLeft = input.scrollLeft;
     }
 
     input.addEventListener('scroll', syncEditorHighlightScroll, { passive: true });
@@ -204,10 +276,29 @@ just start typing :3`;
 
     const collapsedBlocks = new Set();
 
+    const LANGUAGE_ALIASES = {
+        'objective-c': 'objectivec',
+        'vbnet': 'visual-basic',
+        'vb.net': 'visual-basic',
+    };
+    function normalizeLanguage(lang) {
+        if (!lang) return 'text';
+        const l = lang.toLowerCase()
+            .replace(/^language-/, '')
+            .replace(/\b#/g, 'sharp')
+            .replace(/\b\+\+/g, 'pp');
+        return LANGUAGE_ALIASES[l] || l;
+    }
+    function aliasLanguage(alias, target) {
+        if (window.Prism && Prism.languages[target]) {
+            Prism.languages[alias] = Prism.languages[target];
+        }
+    }
+
     function processCodeBlocks(html) {
         return html.replace(/<pre><code(?: class="language-([\w+#.-]+)")?>([\s\S]*?)<\/code><\/pre>/g,
             (match, lang, codeHtml) => {
-                const language = lang || 'text';
+                const language = normalizeLanguage(lang);
                 const text = escapeHtml(decodeHtml(codeHtml));
                 const collapsed = collapsedBlocks.has(text);
                 return `<div class="code-block">
@@ -511,7 +602,12 @@ just start typing :3`;
         if (!inputPane.classList.contains('hidden')) savedEditorTop = input.scrollTop;
         if (!previewPane.classList.contains('hidden')) savedPreviewTop = preview.scrollTop;
         editorContainer.dataset.mode = mode;
-        if (mode !== 'split') inputPane.style.width = '';
+        if (mode !== 'split') {
+            inputPane.style.width = '';
+        } else {
+            const savedSplit = storage.get('meowmd_split');
+            if (savedSplit) inputPane.style.width = savedSplit;
+        }
         const split = mode === 'split';
         const markdown = mode === 'markdown';
         const previewMode = mode === 'preview';
@@ -567,6 +663,28 @@ just start typing :3`;
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         showToast('success', 'downloaded', a.download);
+    });
+
+    /* ---------- drag-drop .md ---------- */
+    const isFileDrag = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+    document.addEventListener('dragover', (e) => {
+        if (isFileDrag(e)) e.preventDefault();
+    });
+    document.addEventListener('drop', (e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        if (!e.target.closest('.editor-shell')) return;
+        const file = Array.from(e.dataTransfer.files).find((f) => /\.(md|markdown)$/i.test(f.name));
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (input.value.trim() !== '' && !window.confirm('replace the current document with this file?')) return;
+            input.value = reader.result;
+            titleInput.value = file.name.replace(/\.(md|markdown)$/i, '');
+            titleInput.dispatchEvent(new Event('input'));
+            input.dispatchEvent(new Event('input'));
+        };
+        reader.readAsText(file);
     });
 
     /* ---------- task lists ---------- */
@@ -629,6 +747,9 @@ just start typing :3`;
 
     /* ---------- resizer ---------- */
     let resizing = false;
+    function persistSplit() {
+        storage.set('meowmd_split', inputPane.style.width);
+    }
     resizer.addEventListener('pointerdown', (e) => {
         resizing = true;
         resizer.setPointerCapture(e.pointerId);
@@ -646,15 +767,16 @@ just start typing :3`;
         if (!resizing) return;
         resizing = false;
         document.body.classList.remove('resizing');
+        persistSplit();
     });
     resizer.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
-        const rect = editorContainer.getBoundingClientRect();
-        let pct = parseFloat(inputPane.style.width) || 50;
+        let pct = parseFloat(String(inputPane.style.width).replace('%', '')) || 50;
         pct += e.key === 'ArrowRight' ? 2 : -2;
         pct = Math.max(20, Math.min(80, pct));
         inputPane.style.width = pct + '%';
+        persistSplit();
     });
 
     /* ---------- scroll-to-top ---------- */
@@ -821,7 +943,9 @@ just start typing :3`;
     if (window.Prism && Prism.plugins && Prism.plugins.autoloader) {
         Prism.plugins.autoloader.languages_path = 'vendor/prism/components/';
     }
+    Object.keys(LANGUAGE_ALIASES).forEach((alias) => aliasLanguage(alias, LANGUAGE_ALIASES[alias]));
     applyMode(storage.get('meowmd_mode') || 'split');
     renderPreview();
     renderEditorHighlight();
+    updateWordCount();
 })();
