@@ -1011,7 +1011,7 @@ input.btn { line-height: 30px; }
   color: var(--text-dim);
 }
 
-.code-block {
+.preview-content .code-block {
   margin: 1em 0;
   background: var(--bg-raised);
   border: 1px solid var(--line);
@@ -1114,7 +1114,8 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 .token.string,
 .token.char,
 .token.attr-value,
-.token.inserted { color: var(--prism-string); }
+.token.inserted,
+.token.template-string { color: var(--prism-string); }
 .token.number { color: var(--prism-number); }
 .token.function,
 .token.maybe-class-name,
@@ -1126,7 +1127,8 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 .token.deleted { color: var(--prism-tag); }
 .token.attr-name,
 .token.attribute,
-.token.variable { color: var(--prism-attr); }
+.token.variable,
+.token.parameter { color: var(--prism-attr); }
 .token.operator,
 .token.entity { color: var(--prism-operator); }
 .token.boolean { color: var(--prism-boolean); }
