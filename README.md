@@ -5,7 +5,8 @@
 nothing to install. open the page, type, and it stays.
 
 ## what it does
-- live preview as you type, with syntax-highlighted code blocks
+- live preview as you type, with syntax highlighting in the editor and code blocks
+- github-style callouts (`> [!NOTE]`, `> [!WARNING]`, and friends)
 - a table of contents that follows the preview
 - per-tab autosave to localstorage; nothing leaves your browser
 - dark and light themes
