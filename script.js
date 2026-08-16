@@ -35,8 +35,11 @@
     const inputPane = $('#inputPane');
     const previewPane = $('#previewPane');
     const editorContainer = $('#editorContainer');
-    const toggleEditorBtn = $('#toggleEditorBtn');
+    const modeBtns = Array.from(document.querySelectorAll('.mode-switch .tab-box'));
     const toggleWidthBtn = $('#toggleWidthBtn');
+    const scrollSyncBtn = $('#scrollSyncBtn');
+    const copyMdBtn = $('#copyMdBtn');
+    const downloadMdBtn = $('#downloadMdBtn');
     const tocContent = $('#tocContent');
     const tocGroup = $('#tocGroup');
     const navIndicator = $('#navIndicator');
@@ -188,7 +191,10 @@ just start typing :3`;
     }
 
     input.addEventListener('scroll', syncEditorHighlightScroll, { passive: true });
-    const themeObserver = new MutationObserver(() => renderEditorHighlight());
+    const themeObserver = new MutationObserver(() => {
+        renderEditorHighlight();
+        renderMermaidOnThemeChange();
+    });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     /* ---------- rendering ---------- */
@@ -247,11 +253,14 @@ just start typing :3`;
         preview.innerHTML = processCodeBlocks(DOMPurify.sanitize(html, { FORBID_ATTR: ['style'] }));
         if (window.Prism) {
             preview.querySelectorAll('pre code[class*="language-"]').forEach((block) => {
+                if (block.classList.contains('language-mermaid')) return;
                 Prism.highlightElement(block);
             });
         }
         buildCallouts(preview);
         buildToc();
+        wireTaskLists();
+        renderMermaidBlocks();
     }
 
     function buildCallouts(preview) {
@@ -291,8 +300,36 @@ just start typing :3`;
         });
     }
 
+    function slugifyHeading(text) {
+        return text.toLowerCase().trim()
+            .replace(/[^\p{L}\p{N}\s-]/gu, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    function addHeadingAnchor(heading) {
+        if (heading.querySelector('.heading-anchor')) return;
+        const btn = document.createElement('button');
+        btn.className = 'heading-anchor';
+        btn.type = 'button';
+        btn.title = 'copy link to this heading';
+        btn.setAttribute('aria-label', 'copy link to this heading');
+        btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6.7 8.7a3.3 3.3 0 0 0 5 .4l2-2a3.3 3.3 0 0 0-4.7-4.7L7.9 3.5"/><path d="M9.3 7.3a3.3 3.3 0 0 0-5-.4l-2 2a3.3 3.3 0 0 0 4.7 4.7l1.1-1.1"/></svg>';
+        btn.addEventListener('click', () => {
+            const anchor = location.href.split('#')[0] + '#' + heading.id;
+            copyText(anchor).then(() => {
+                showToast('success', 'link copied', '#' + heading.id);
+            }, () => {
+                showToast('danger', 'copy failed', 'clipboard access was denied');
+            });
+        });
+        heading.appendChild(btn);
+    }
+
     function buildToc() {
-        const headings = Array.from(preview.querySelectorAll('h1, h2, h3'));
+        const headings = Array.from(preview.querySelectorAll('h1, h2, h3'))
+            .filter((h) => !h.closest('section.footnotes'));
         const items = [];
 
         if (headings.length === 0) {
@@ -301,10 +338,19 @@ just start typing :3`;
             return;
         }
 
-        headings.forEach((heading, index) => {
-            if (!heading.id) heading.id = `heading-${index}`;
+        const usedIds = new Set();
+        headings.forEach((heading) => {
+            if (!heading.id) {
+                const base = slugifyHeading(heading.textContent) || 'section';
+                let id = base;
+                let n = 1;
+                while (usedIds.has(id)) id = `${base}-${n++}`;
+                heading.id = id;
+            }
+            usedIds.add(heading.id);
             const level = parseInt(heading.tagName.charAt(1), 10);
             const text = heading.textContent.trim();
+            addHeadingAnchor(heading);
             const li = document.createElement('li');
             li.className = 'toc-item';
             const btn = document.createElement('button');
@@ -373,7 +419,7 @@ just start typing :3`;
         if (copyBtn) {
             const content = copyBtn.closest('.code-block').querySelector('.code-content');
             const raw = content.dataset.raw || '';
-            navigator.clipboard.writeText(raw).then(() => {
+            copyText(raw).then(() => {
                 const original = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 4L6 11l-3-3"/></svg>';
                 copyBtn.classList.add('copied');
@@ -456,27 +502,130 @@ just start typing :3`;
         });
     }
 
-    /* ---------- editor toggle ---------- */
-    toggleEditorBtn.addEventListener('click', () => {
-        const isHidden = inputPane.classList.toggle('hidden');
-        previewPane.classList.toggle('full-width', isHidden);
-        resizer.classList.toggle('hidden', isHidden);
-        if (isHidden) {
-            toggleWidthBtn.classList.remove('hidden');
-            toggleEditorBtn.title = 'show editor';
-            toggleEditorBtn.setAttribute('aria-label', 'show editor');
-        } else {
-            toggleWidthBtn.classList.add('hidden');
-            previewPane.classList.remove('narrow-width');
-            toggleEditorBtn.title = 'hide editor';
-            toggleEditorBtn.setAttribute('aria-label', 'hide editor');
-        }
+    /* ---------- view modes ---------- */
+    const MODES = ['split', 'markdown', 'preview'];
+    let savedEditorTop = 0;
+    let savedPreviewTop = 0;
+    function applyMode(mode) {
+        if (!MODES.includes(mode)) mode = 'split';
+        if (!inputPane.classList.contains('hidden')) savedEditorTop = input.scrollTop;
+        if (!previewPane.classList.contains('hidden')) savedPreviewTop = preview.scrollTop;
+        editorContainer.dataset.mode = mode;
+        if (mode !== 'split') inputPane.style.width = '';
+        const split = mode === 'split';
+        const markdown = mode === 'markdown';
+        const previewMode = mode === 'preview';
+        inputPane.classList.toggle('hidden', previewMode);
+        previewPane.classList.toggle('hidden', markdown);
+        resizer.classList.toggle('hidden', !split);
+        toggleWidthBtn.classList.toggle('hidden', !previewMode);
+        if (split) previewPane.classList.remove('narrow-width');
+        modeBtns.forEach((btn) => {
+            const active = btn.dataset.mode === mode;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', String(active));
+        });
+        input.scrollTop = savedEditorTop;
+        preview.scrollTop = savedPreviewTop;
+        syncEditorHighlightScroll();
+        storage.set('meowmd_mode', mode);
+    }
+    modeBtns.forEach((btn) => {
+        btn.addEventListener('click', () => applyMode(btn.dataset.mode));
     });
 
     toggleWidthBtn.addEventListener('click', () => {
         const narrow = previewPane.classList.toggle('narrow-width');
         toggleWidthBtn.title = narrow ? 'expand preview' : 'narrow preview';
+        toggleWidthBtn.setAttribute('aria-label', narrow ? 'expand preview' : 'narrow preview');
+        toggleWidthBtn.setAttribute('aria-pressed', String(narrow));
     });
+
+    /* ---------- export ---------- */
+    function slugifyTitle(s) {
+        return s.toLowerCase().trim()
+            .replace(/[^\p{L}\p{N}\s-]/gu, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+    copyMdBtn.addEventListener('click', () => {
+        copyText(input.value).then(() => {
+            showToast('success', 'copied', 'markdown copied to clipboard');
+        }, () => {
+            showToast('danger', 'copy failed', 'clipboard access was denied');
+        });
+    });
+    downloadMdBtn.addEventListener('click', () => {
+        const name = slugifyTitle(titleInput.value) || 'untitled';
+        const blob = new Blob([input.value], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name + '.md';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('success', 'downloaded', a.download);
+    });
+
+    /* ---------- task lists ---------- */
+    function taskListLineIndexes(md) {
+        const lines = md.split('\n');
+        const indexes = [];
+        let inFence = false;
+        lines.forEach((line, i) => {
+            if (/^\s*(```|~~~)/.test(line)) {
+                inFence = !inFence;
+                return;
+            }
+            if (!inFence && /^\s*(?:>\s*)*(?:[-*+]|\d+\.)\s+\[[ xX]\]/.test(line)) indexes.push(i);
+        });
+        return indexes;
+    }
+    function wireTaskLists() {
+        const indexes = taskListLineIndexes(input.value);
+        preview.querySelectorAll('input[type="checkbox"]').forEach((box, i) => {
+            const lineIdx = indexes[i];
+            if (lineIdx === undefined) return;
+            box.disabled = false;
+            box.removeAttribute('disabled');
+            box.addEventListener('click', () => {
+                const lines = input.value.split('\n');
+                lines[lineIdx] = lines[lineIdx].replace(/\[[ xX]\]/, box.checked ? '[x]' : '[ ]');
+                input.value = lines.join('\n');
+                input.dispatchEvent(new Event('input'));
+            });
+        });
+    }
+
+    /* ---------- scroll sync ---------- */
+    let scrollSyncActive = storage.get('meowmd_scrollsync') === 'on';
+    let scrollSyncSuppress = null;
+    scrollSyncBtn.classList.toggle('active', scrollSyncActive);
+    scrollSyncBtn.setAttribute('aria-pressed', String(scrollSyncActive));
+    scrollSyncBtn.addEventListener('click', () => {
+        scrollSyncActive = !scrollSyncActive;
+        scrollSyncBtn.classList.toggle('active', scrollSyncActive);
+        scrollSyncBtn.setAttribute('aria-pressed', String(scrollSyncActive));
+        storage.set('meowmd_scrollsync', scrollSyncActive ? 'on' : 'off');
+    });
+    function mirrorScroll(source, target) {
+        const srcMax = source.scrollHeight - source.clientHeight;
+        const tgtMax = target.scrollHeight - target.clientHeight;
+        if (srcMax <= 0 || tgtMax <= 0) return;
+        scrollSyncSuppress = target;
+        target.scrollTop = (source.scrollTop / srcMax) * tgtMax;
+        setTimeout(() => { if (scrollSyncSuppress === target) scrollSyncSuppress = null; }, 80);
+    }
+    function handleScrollSync(e) {
+        if (!scrollSyncActive) return;
+        if (e.target === scrollSyncSuppress) return;
+        if (e.target === input) mirrorScroll(input, preview);
+        else if (e.target === preview) mirrorScroll(preview, input);
+    }
+    input.addEventListener('scroll', handleScrollSync, { passive: true });
+    preview.addEventListener('scroll', handleScrollSync, { passive: true });
 
     /* ---------- resizer ---------- */
     let resizing = false;
@@ -516,6 +665,14 @@ just start typing :3`;
         scrollToTopBtn.classList.toggle('visible', preview.scrollTop > 400);
     }, { passive: true });
 
+    /* ---------- clipboard ---------- */
+    function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text);
+        }
+        return Promise.reject(new Error('clipboard unavailable'));
+    }
+
     /* ---------- toast ---------- */
     const toastIcons = {
         success: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>',
@@ -527,12 +684,14 @@ just start typing :3`;
         t.innerHTML = `
             <div class="toast-icon" style="color:var(--${type === 'danger' ? 'danger' : 'success'})">${toastIcons[type]}</div>
             <div class="toast-body">
-                <div class="toast-title">${title}</div>
-                <div class="toast-msg">${msg}</div>
+                <div class="toast-title"></div>
+                <div class="toast-msg"></div>
             </div>
             <button class="toast-close" type="button" aria-label="dismiss">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
             </button>`;
+        t.querySelector('.toast-title').textContent = title;
+        t.querySelector('.toast-msg').textContent = msg;
         t.querySelector('.toast-close').addEventListener('click', () => removeToast(t));
         toastStack.appendChild(t);
         setTimeout(() => removeToast(t), 4000);
@@ -543,10 +702,126 @@ just start typing :3`;
         setTimeout(() => t.remove(), 120);
     }
 
+    /* ---------- footnotes ---------- */
+    if (window.marked && window.markedFootnote) {
+        marked.use(markedFootnote());
+    }
+
+    /* ---------- mermaid ---------- */
+    let mermaidLoading = null;
+    let mermaidInitializedTheme = null;
+    const mermaidCache = new Map();      // theme+source -> sanitized svg
+    const mermaidInflight = new Map();   // theme+source -> Promise<sanitized svg>
+
+    /* no prism grammar exists for mermaid; stub it so the editor's markdown
+       grammar does not ask the autoloader for prism-mermaid (which 404s) */
+    if (window.Prism) Prism.languages.mermaid = {};
+
+    function mermaidTheme() {
+        return document.documentElement.dataset.theme === 'light' ? 'default' : 'dark';
+    }
+    function mermaidKey(source) {
+        return mermaidTheme() + '\u0000' + source;
+    }
+
+    function loadMermaid() {
+        if (window.mermaid) return Promise.resolve(window.mermaid);
+        if (mermaidLoading) return mermaidLoading;
+        mermaidLoading = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'vendor/mermaid.min.js';
+            s.onload = () => resolve(window.mermaid);
+            s.onerror = () => {
+                mermaidLoading = null;
+                reject(new Error('mermaid failed to load'));
+            };
+            document.head.appendChild(s);
+        });
+        return mermaidLoading;
+    }
+
+    function ensureMermaidInitialized() {
+        return loadMermaid().then((m) => {
+            const theme = mermaidTheme();
+            if (mermaidInitializedTheme !== theme) {
+                m.initialize({
+                    startOnLoad: false,
+                    securityLevel: 'strict',
+                    theme,
+                    fontFamily: '"Onest", ui-sans-serif, system-ui, sans-serif',
+                    themeVariables: { background: 'transparent' },
+                });
+                mermaidInitializedTheme = theme;
+            }
+            return m;
+        });
+    }
+
+    function hashString(s) {
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+        return (h >>> 0).toString(36);
+    }
+
+    async function renderMermaidBlock(block) {
+        const content = block.querySelector('.code-content');
+        const source = (content && content.dataset.raw) || '';
+        if (!source.trim()) return;
+        const key = mermaidKey(source);
+        if (mermaidCache.has(key)) {
+            content.innerHTML = mermaidCache.get(key);
+            content.classList.add('mermaid-rendered');
+            return;
+        }
+        let inflight = mermaidInflight.get(key);
+        if (!inflight) {
+            inflight = ensureMermaidInitialized()
+                .then((m) => m.render('mmd-' + hashString(source), source))
+                .then(({ svg }) => DOMPurify.sanitize(svg, {
+                    USE_PROFILES: { svg: true, svgFilters: true },
+                    FORBID_TAGS: ['script', 'foreignObject'],
+                }))
+                .then((clean) => {
+                    mermaidCache.set(key, clean);
+                    mermaidInflight.delete(key);
+                    return clean;
+                }, (err) => {
+                    mermaidInflight.delete(key);
+                    throw err;
+                });
+            mermaidInflight.set(key, inflight);
+        }
+        try {
+            const clean = await inflight;
+            content.innerHTML = clean;
+            content.classList.add('mermaid-rendered');
+        } catch (err) {
+            content.classList.remove('mermaid-rendered');
+        }
+    }
+
+    function renderMermaidBlocks() {
+        let found = false;
+        preview.querySelectorAll('.code-block').forEach((block) => {
+            const label = block.querySelector('.language-label');
+            if (!label || label.textContent.trim().toLowerCase() !== 'mermaid') return;
+            found = true;
+            renderMermaidBlock(block);
+        });
+        return found;
+    }
+
+    function renderMermaidOnThemeChange() {
+        if (mermaidInitializedTheme === null && !mermaidCache.size) return;
+        mermaidInitializedTheme = null;
+        renderMermaidBlocks();
+    }
+
     /* ---------- init ---------- */
     if (window.Prism && Prism.plugins && Prism.plugins.autoloader) {
         Prism.plugins.autoloader.languages_path = 'vendor/prism/components/';
     }
+    applyMode(storage.get('meowmd_mode') || 'split');
     renderPreview();
     renderEditorHighlight();
 })();
