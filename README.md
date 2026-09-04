@@ -18,4 +18,4 @@ nothing to install. open the page, type, and it stays.
 no account, no server, no build step. it is a page and a few files, so it stays fast and private.
 
 ## development
-plain html/css/js served from github pages. edit `index.html`, `style.css`, `script.js`, then run any static server to preview.
+plain html/css/js served from github pages. edit `index.html`, `style.css`, `script.js`; the stylesheet and module files copied in at the root ship frozen. run any static server to preview.

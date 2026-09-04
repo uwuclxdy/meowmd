@@ -1,3 +1,5 @@
+import { showToast, initSidebar } from './ui.js';
+
 (() => {
     'use strict';
 
@@ -14,20 +16,6 @@
         },
     };
 
-    /* ---------- theme ---------- */
-    const themeToggleBtns = document.querySelectorAll('.theme-toggle');
-    function setTheme(t) {
-        document.documentElement.dataset.theme = t;
-        storage.set('meowmd_theme', t);
-    }
-    setTheme(storage.get('meowmd_theme') === 'light' ? 'light' : 'dark');
-    themeToggleBtns.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-            setTheme(next);
-        });
-    });
-
     /* ---------- app ---------- */
     const input = $('#markdownInput');
     const preview = $('#previewContent');
@@ -35,20 +23,15 @@
     const inputPane = $('#inputPane');
     const previewPane = $('#previewPane');
     const editorContainer = $('#editorContainer');
-    const modeBtns = Array.from(document.querySelectorAll('.mode-switch .tab-box'));
+    const modeBtns = Array.from(document.querySelectorAll('.tabs-boxed-wrap .tab-box'));
     const toggleWidthBtn = $('#toggleWidthBtn');
     const scrollSyncBtn = $('#scrollSyncBtn');
     const copyMdBtn = $('#copyMdBtn');
     const downloadMdBtn = $('#downloadMdBtn');
     const tocContent = $('#tocContent');
-    const tocGroup = $('#tocGroup');
-    const navIndicator = $('#navIndicator');
-    const hamburgerBtn = $('#hamburgerBtn');
-    const overlay = $('#overlay');
-    const tocSidebar = $('#tocSidebar');
+    const sidebarEl = $('#sidebar');
     const scrollToTopBtn = $('#scrollToTop');
     const titleInput = $('#titleInput');
-    const toastStack = $('#toastStack');
     const editorHighlight = $('#editorHighlight');
     const editorHighlightCode = $('#editorHighlightCode');
     const editorHighlightWrap = $('.editor-highlight-wrap');
@@ -309,8 +292,7 @@ just start typing :3`;
                             <span class="language-label">${language}</span>
                         </div>
                         <button class="copy-button" type="button" title="copy code" aria-label="copy code">
-                            <svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-                                stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9"/><path d="M10.5 5.5v-3h-9v9h3"/></svg>
+                            <svg class="copy-icon" aria-hidden="true"><use href="#i-copy"/></svg>
                         </button>
                     </div>
                     <div class="code-content${collapsed ? ' collapsed' : ''}" data-raw="${text}"${collapsed ? ' style="max-height:0px"' : ''}>
@@ -379,12 +361,17 @@ just start typing :3`;
             }
             const callout = document.createElement('div');
             callout.className = `callout callout-${semantic}`;
+            const glyph = { info: 'i-info', success: 'i-success', warning: 'i-warning', danger: 'i-error' }[semantic] || 'i-info';
+            const icon = document.createElement('div');
+            icon.className = 'callout-icon';
+            icon.innerHTML = `<svg aria-hidden="true"><use href="#${glyph}"/></svg>`;
             const title = document.createElement('div');
             title.className = 'callout-title';
             title.textContent = label;
             const body = document.createElement('div');
             body.className = 'callout-body';
             while (bq.firstChild) body.appendChild(bq.firstChild);
+            callout.appendChild(icon);
             callout.appendChild(title);
             callout.appendChild(body);
             bq.replaceWith(callout);
@@ -406,7 +393,7 @@ just start typing :3`;
         btn.type = 'button';
         btn.title = 'copy link to this heading';
         btn.setAttribute('aria-label', 'copy link to this heading');
-        btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6.7 8.7a3.3 3.3 0 0 0 5 .4l2-2a3.3 3.3 0 0 0-4.7-4.7L7.9 3.5"/><path d="M9.3 7.3a3.3 3.3 0 0 0-5-.4l-2 2a3.3 3.3 0 0 0 4.7 4.7l1.1-1.1"/></svg>';
+        btn.innerHTML = '<svg aria-hidden="true"><use href="#i-copy"/></svg>';
         btn.addEventListener('click', () => {
             const anchor = location.href.split('#')[0] + '#' + heading.id;
             copyText(anchor).then(() => {
@@ -418,6 +405,16 @@ just start typing :3`;
         heading.appendChild(btn);
     }
 
+    /* the drawer's own row-close wiring runs once at ui.js init, before the
+       first buildToc: the rows are rebuilt per keystroke, so the page closes
+       the drawer itself on a row tap */
+    function closeDrawer() {
+        if (window.innerWidth > 768) return;
+        sidebarEl.classList.remove('open');
+        document.getElementById('sidebar-overlay')?.classList.remove('open');
+        document.getElementById('hamburger-btn')?.setAttribute('aria-expanded', 'false');
+    }
+
     function buildToc() {
         const headings = Array.from(preview.querySelectorAll('h1, h2, h3'))
             .filter((h) => !h.closest('section.footnotes'));
@@ -425,7 +422,6 @@ just start typing :3`;
 
         if (headings.length === 0) {
             tocContent.innerHTML = '<p class="toc-empty">start typing to see headings...</p>';
-            navIndicator.style.opacity = '0';
             return;
         }
 
@@ -445,11 +441,14 @@ just start typing :3`;
             const li = document.createElement('li');
             li.className = 'toc-item';
             const btn = document.createElement('button');
-            btn.className = `toc-link toc-level-${level}`;
+            btn.className = `nav-item toc-level-${level}`;
             btn.type = 'button';
-            btn.textContent = text;
             btn.title = text;
+            const span = document.createElement('span');
+            span.textContent = text;
+            btn.appendChild(span);
             btn.addEventListener('click', () => {
+                closeDrawer();
                 const hRect = heading.getBoundingClientRect();
                 const pRect = preview.getBoundingClientRect();
                 const scrollTarget = hRect.top - pRect.top + preview.scrollTop - 48;
@@ -466,10 +465,12 @@ just start typing :3`;
         tocContent.appendChild(ul);
 
         tocItems = items;
-        positionNavIndicator();
+        // rows are rebuilt per keystroke, so each build wires the new rows' dots
+        initSidebar();
+        updateTocActive();
     }
 
-    function positionNavIndicator() {
+    function updateTocActive() {
         let active = null;
         const previewRect = preview.getBoundingClientRect();
         tocItems.forEach((it) => {
@@ -478,18 +479,15 @@ just start typing :3`;
                 if (!active || rect.top <= active.el.getBoundingClientRect().top) active = it;
             }
         });
-        const current = tocContent.querySelector('.toc-link.active');
-        if (current) current.classList.remove('active');
-        if (!active) {
-            navIndicator.style.opacity = '0';
-            return;
+        const current = tocContent.querySelector('.nav-item.active');
+        if (current) {
+            current.classList.remove('active');
+            current.removeAttribute('aria-current');
         }
-        const linkRect = active.link.getBoundingClientRect();
-        const groupRect = tocGroup.getBoundingClientRect();
-        navIndicator.style.top = (linkRect.top - groupRect.top) + 'px';
-        navIndicator.style.height = linkRect.height + 'px';
-        navIndicator.style.opacity = '1';
-        active.link.classList.add('active');
+        if (active) {
+            active.link.classList.add('active');
+            active.link.setAttribute('aria-current', 'true');
+        }
     }
 
     let tocItems = [];
@@ -499,7 +497,7 @@ just start typing :3`;
             tocScrollQueued = true;
             requestAnimationFrame(() => {
                 tocScrollQueued = false;
-                if (tocItems.length) positionNavIndicator();
+                if (tocItems.length) updateTocActive();
             });
         }
     }, { passive: true });
@@ -512,7 +510,7 @@ just start typing :3`;
             const raw = content.dataset.raw || '';
             copyText(raw).then(() => {
                 const original = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<svg class="copy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 4L6 11l-3-3"/></svg>';
+                copyBtn.innerHTML = '<svg class="copy-icon" aria-hidden="true"><use href="#i-check"/></svg>';
                 copyBtn.classList.add('copied');
                 setTimeout(() => {
                     copyBtn.innerHTML = original;
@@ -553,43 +551,20 @@ just start typing :3`;
         content.style.maxHeight = collapsed ? '0px' : content.scrollHeight + 'px';
     }
 
-    /* ---------- TOC drawer (mobile) ---------- */
-    function openDrawer() {
-        tocSidebar.classList.add('open');
-        overlay.classList.add('open');
-        hamburgerBtn.setAttribute('aria-expanded', 'true');
-    }
-    function closeDrawer() {
-        tocSidebar.classList.remove('open');
-        overlay.classList.remove('open');
-        hamburgerBtn.setAttribute('aria-expanded', 'false');
-    }
-    hamburgerBtn.addEventListener('click', () => {
-        tocSidebar.classList.contains('open') ? closeDrawer() : openDrawer();
-    });
-    overlay.addEventListener('click', closeDrawer);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && tocSidebar.classList.contains('open')) closeDrawer();
-    });
-    tocContent.addEventListener('click', (e) => {
-        if (e.target.closest('.toc-link') && window.innerWidth <= 768) closeDrawer();
-    });
-
-    /* ---------- sidebar collapse (desktop) ---------- */
-    const layoutEl = document.querySelector('.layout');
+    /* ---------- sidebar rail (desktop) ---------- */
     const sidebarToggle = $('#sidebarToggle');
     if (sidebarToggle) {
-        const setSidebarCollapsed = (collapsed) => {
-            layoutEl.classList.toggle('sidebar-collapsed', collapsed);
-            sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
-            sidebarToggle.title = collapsed ? 'show table of contents' : 'hide table of contents';
-            sidebarToggle.setAttribute('aria-label', collapsed ? 'show table of contents' : 'hide table of contents');
+        const setRail = (folded) => {
+            sidebarEl.classList.toggle('rail', folded);
+            sidebarToggle.setAttribute('aria-expanded', String(!folded));
+            sidebarToggle.title = folded ? 'show table of contents' : 'hide table of contents';
+            sidebarToggle.setAttribute('aria-label', folded ? 'show table of contents' : 'hide table of contents');
         };
-        setSidebarCollapsed(storage.get('meowmd_sidebar') === 'collapsed');
+        setRail(storage.get('meowmd_sidebar') === 'collapsed');
         sidebarToggle.addEventListener('click', () => {
-            const collapsed = layoutEl.classList.toggle('sidebar-collapsed');
-            storage.set('meowmd_sidebar', collapsed ? 'collapsed' : 'open');
-            setSidebarCollapsed(collapsed);
+            const folded = !sidebarEl.classList.contains('rail');
+            storage.set('meowmd_sidebar', folded ? 'collapsed' : 'open');
+            setRail(folded);
         });
     }
 
@@ -793,33 +768,7 @@ just start typing :3`;
     }
 
     /* ---------- toast ---------- */
-    const toastIcons = {
-        success: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>',
-        danger: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M10 6L6 10M6 6l4 4"/></svg>',
-    };
-    function showToast(type, title, msg) {
-        const t = document.createElement('div');
-        t.className = `toast toast-${type}`;
-        t.innerHTML = `
-            <div class="toast-icon" style="color:var(--${type === 'danger' ? 'danger' : 'success'})">${toastIcons[type]}</div>
-            <div class="toast-body">
-                <div class="toast-title"></div>
-                <div class="toast-msg"></div>
-            </div>
-            <button class="toast-close" type="button" aria-label="dismiss">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-            </button>`;
-        t.querySelector('.toast-title').textContent = title;
-        t.querySelector('.toast-msg').textContent = msg;
-        t.querySelector('.toast-close').addEventListener('click', () => removeToast(t));
-        toastStack.appendChild(t);
-        setTimeout(() => removeToast(t), 4000);
-    }
-    function removeToast(t) {
-        if (!t || !t.parentNode) return;
-        t.classList.add('removing');
-        setTimeout(() => t.remove(), 120);
-    }
+    /* showToast and removeToast come from ui.js, the system's own builder */
 
     /* ---------- footnotes ---------- */
     if (window.marked && window.markedFootnote) {
