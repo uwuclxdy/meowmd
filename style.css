@@ -1,624 +1,401 @@
 /* ============================================================
-   meowmd — page styles
+   meowmd - page styles
    tokens.css, components.css and cursor.css load before this file.
-   Everything here is local to the app: the editor chrome, the
-   markdown preview typography and the prism theme. The aliases
-   below keep the older local rules on the system ramp.
+   Everything here is screen layout plus the pieces the system does
+   not ship: the editor chrome, the table of contents geometry, the
+   prism theme and the preview extras.
    ============================================================ */
 
-:root {
-  /* aliases onto the system tokens */
-  --bg-raised:     var(--surface-1);
-  --bg-sunken:     var(--well);
-  --bg-hover:      var(--surface-2);
-  --line-strong:   var(--surface-3);
-  --text-muted:    var(--text-2);
-  --text-dim:      var(--text-3);
-  --text-faint:    var(--text-4);
-  --text-on-accent: var(--on-accent);
-  --accent-soft:   var(--accent-quiet);
-  --accent-ring:   var(--accent-line);
-  --radius:        var(--r-1);
-  --dur-fast:      var(--dur-tint);
-  --dur-base:      var(--dur-near);
-  --text-xs:       var(--t-2);
-  --text-sm:       var(--t-2);
-  --text-base:     var(--t-3);
-  --text-md:       var(--t-4);
+/* ---------- shell ---------- */
 
-  /* prism theme (local to this app) */
-  --prism-bg:        #11111B;
-  --prism-comment:   #6C7086;
-  --prism-punctuation: #9399B2;
-  --prism-keyword:   #CBA6F7;
-  --prism-string:    #A6E3A1;
-  --prism-number:    #FAB387;
-  --prism-function:  #89B4FA;
-  --prism-class:     #F5C2E7;
-  --prism-tag:       #F38BA8;
-  --prism-attr:      #94E2D5;
-  --prism-operator:  #89DCEB;
-  --prism-boolean:   #F9E2AF;
-  --prism-builtin:   #74C7EC;
-  --prism-regex:     #F9E2AF;
-  --prism-variable:  #BAC2DE;
-  --prism-property:  #89B4FA;
-  --prism-interpolation: #F5C2E7;
+/* the page never scrolls: the shell owns the viewport, the preview is
+   the scroller */
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
 }
-
-[data-theme="light"] {
-  --prism-bg:        #EFF1F5;
-  --prism-comment:   #6C6F85;
-  --prism-punctuation: #6C6F85;
-  --prism-keyword:   #8839EF;
-  --prism-string:    #40A02B;
-  --prism-number:    #FE640B;
-  --prism-function:  #1E66F5;
-  --prism-class:     #EA76CB;
-  --prism-tag:       #D20F39;
-  --prism-attr:      #179299;
-  --prism-operator:  #04A5E5;
-  --prism-boolean:   #DF8E1D;
-  --prism-builtin:   #209FB5;
-  --prism-regex:     #DF8E1D;
-  --prism-variable:  #4C4F69;
-  --prism-property:  #1E66F5;
-  --prism-interpolation: #EA76CB;
-}
-
-/* ---- Utilities ---- */
-.hidden { display: none !important; }
-
-/* ---- Reduced motion: the local animated pieces, restated the way the
-   system does it: fades stay, travel snaps. ---- */
-@media (prefers-reduced-motion: reduce) {
-  .scroll-to-top,
-  .collapse-arrow,
-  .code-content,
-  .editor-shell .input-pane,
-  .editor-shell .preview-pane,
-  .editor-shell .resizer {
-    transition: none;
-  }
-  .scroll-to-top { transform: none; }
-}
-
-/* ============================================================
-   meowmd — layout
-   ============================================================ */
 
 .layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* ---- Workspace (sidebar + main) ---- */
-.workspace {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
+/* the main column stays transparent: the sky shows in the gap around
+   the card */
 .main-col {
   min-width: 0;
-  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg);
 }
 
-/* ---- TOC indents ---- */
-.toc-empty {
-  color: var(--text-faint);
-  font-size: var(--text-sm);
-  font-style: italic;
-  padding: 0 var(--space-4) var(--space-3);
-}
-.toc-list { list-style: none; }
-.toc-item { display: flex; align-items: stretch; position: relative; }
-.toc-level-2 { padding-left: calc(var(--space-4) + var(--space-3)); }
-.toc-level-3 { padding-left: calc(var(--space-4) + var(--space-6)); font-size: var(--text-xs); }
+/* ---------- app bar ---------- */
 
-/* ---- Top navbar (desktop chrome; the mobile topbar takes over below 768px) ---- */
-.navbar-toggle { margin-right: var(--space-3); }
-.navbar-modes {
+.app-bar {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
+  height: var(--navbar-h);
+  padding-inline: var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
 }
-.navbar-title {
-  flex: 1;
+
+/* both side zones flex equally, so the title sits on the bar's centre */
+.app-bar-title {
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 0 var(--space-3);
 }
+
 .title-input {
-  width: 100%;
-  max-width: 420px;
-  height: var(--ctl);
-  padding: 4px 10px;
-  font-size: var(--text-sm);
+  max-width: 22rem;
   text-align: center;
 }
 
-.mobile-brand {
-  font: 550 var(--text-base)/1 var(--font-sans);
-  color: var(--text);
-  letter-spacing: -0.02em;
+.app-bar-actions {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
-.mobile-actions { display: flex; align-items: center; gap: var(--space-2); }
 
-/* the view-mode switch under the topbar, in flow below it */
-.mobile-modes { display: none; }
+/* ---------- editor shell ---------- */
 
-/* ---- Editor shell ---- */
-.editor-wrap {
+.editor-area {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-.editor-shell {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  padding: var(--space-5);
   overflow: hidden;
 }
 
+/* the one raised surface: the card line stays, the padding goes */
+.editor-shell.card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* The fold is the row's own geometry, the named deviation the sidebar rail
+   already carries: no transform reflows the pane beside it. */
 .input-pane {
   display: flex;
   flex-direction: column;
   min-width: 240px;
   width: 50%;
   flex-shrink: 0;
-  background: var(--bg-sunken);
-  border-right: 1px solid var(--line);
+  overflow: hidden;
   transition:
-    width var(--dur-base) var(--ease),
-    min-width var(--dur-base) var(--ease),
-    opacity var(--dur-base) var(--ease),
-    border-right-width var(--dur-base) var(--ease);
-  overflow: hidden;
+    width var(--dur-far) var(--ease-out),
+    min-width var(--dur-far) var(--ease-out),
+    opacity var(--dur-far) var(--ease-out);
 }
+
 body.resizing .input-pane { transition: none; }
-
-.pane-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 44px;
-  padding: 0 var(--space-3);
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-}
-
-.word-count {
-  font: 450 11px/1.4 var(--font-sans);
-  letter-spacing: 0.02em;
-  color: var(--text-dim);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  margin-left: auto;
-}
-
-.pane-header-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.scroll-sync-toggle.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.editor-highlight-wrap {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.markdown-input {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  background: transparent;
-  border: none;
-  color: transparent;
-  caret-color: var(--text);
-  -webkit-text-fill-color: transparent;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.55;
-  letter-spacing: normal;
-  padding: var(--space-3);
-  tab-size: 8;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
-  resize: none;
-  outline: none;
-  scrollbar-gutter: stable;
-  z-index: 1;
-}
-.markdown-input::placeholder {
-  color: var(--text-faint);
-  -webkit-text-fill-color: var(--text-faint);
-}
-.markdown-input::selection {
-  color: var(--text);
-  -webkit-text-fill-color: var(--text);
-  background: var(--accent-soft);
-}
-.editor-highlight-wrap.no-highlight .markdown-input {
-  color: var(--text);
-  -webkit-text-fill-color: var(--text);
-}
-
-.editor-highlight {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  padding: var(--space-3);
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.55;
-  letter-spacing: normal;
-  tab-size: 8;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  box-sizing: border-box;
-  pointer-events: none;
-  overflow: hidden;
-  scrollbar-gutter: stable;
-}
-.editor-highlight code {
-  font: inherit;
-  color: inherit;
-  background: transparent;
-}
-
-/* markdown token colors in the editor */
-.editor-highlight .token.title { color: var(--prism-function); }
-.editor-highlight .token.bold { font-weight: 600; color: var(--prism-keyword); }
-.editor-highlight .token.italic { font-style: italic; color: var(--prism-builtin); }
-.editor-highlight .token.strike { text-decoration: line-through; color: var(--prism-comment); }
-.editor-highlight .token.code-snippet { color: var(--prism-string); }
-.editor-highlight .token.code-language { color: var(--prism-comment); }
-
-.resizer {
-  width: 5px;
-  flex-shrink: 0;
-  cursor: col-resize;
-  background: var(--line);
-  position: relative;
-  z-index: 5;
-  transition: width var(--dur-base) var(--ease), background-color var(--dur-fast) var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.resizer:hover { background: var(--accent); }
-.resizer:active { background: var(--accent); }
 
 .preview-pane {
   flex: 1;
   min-width: 240px;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
   overflow: hidden;
   transition:
-    opacity var(--dur-base) var(--ease),
-    min-width var(--dur-base) var(--ease);
+    opacity var(--dur-far) var(--ease-out),
+    min-width var(--dur-far) var(--ease-out);
 }
 
-/* view modes: the collapsed pane animates to zero width, the other pane fills the freed space */
+/* view modes: the collapsed pane folds away, the other fills the space.
+   Entering a mode is an entrance, leaving it an exit at 0.6x. */
 .editor-shell[data-mode="markdown"] .input-pane { width: 100%; }
+
 .editor-shell[data-mode="markdown"] .preview-pane {
   min-width: 0;
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity var(--dur-base) var(--ease),
-    min-width var(--dur-base) var(--ease),
-    visibility 0s var(--dur-base);
+    opacity var(--dur-out-far) var(--ease),
+    min-width var(--dur-out-far) var(--ease),
+    visibility 0s var(--dur-out-far);
 }
+
+.editor-shell[data-mode="preview"] .input-pane {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    width var(--dur-out-far) var(--ease),
+    min-width var(--dur-out-far) var(--ease),
+    opacity var(--dur-out-far) var(--ease),
+    visibility 0s var(--dur-out-far);
+}
+
 .editor-shell[data-mode="markdown"] .resizer,
 .editor-shell[data-mode="preview"] .resizer {
   width: 0;
   visibility: hidden;
   transition:
-    width var(--dur-base) var(--ease),
-    background-color var(--dur-fast) var(--ease),
-    visibility 0s var(--dur-base);
+    width var(--dur-out-far) var(--ease),
+    background var(--dur-tint) var(--ease),
+    visibility 0s var(--dur-out-far);
 }
-.editor-shell[data-mode="preview"] .input-pane {
-  width: 0;
-  min-width: 0;
-  border-right-width: 0;
-  opacity: 0;
-  visibility: hidden;
+
+/* ---------- pane heads ---------- */
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.word-count {
+  font: 400 var(--t-1)/1 var(--font-mono);
+  color: var(--text-4);
+  white-space: nowrap;
+  margin-inline-start: auto;
+}
+
+.pane-head-actions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* the scroll-sync toggle's on state */
+.pane-head .btn[aria-pressed="true"] {
+  color: var(--accent-text);
+  border-color: var(--accent-line);
+  background: var(--accent-quiet);
+  --tint-ground: transparent;
+}
+
+/* ---------- editor overlay ---------- */
+
+.editor-highlight-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--well);
+}
+
+/* the input family's focus recipe: a 1px accent edge with the 3px halo */
+.editor-highlight-wrap:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--accent),
+    inset 0 0 0 4px var(--accent-line);
+}
+
+/* the textarea and the overlay share every metric, or the highlight drifts */
+.markdown-input,
+.editor-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: var(--space-4);
+  font: 400 var(--t-3)/1.55 var(--font-mono);
+  letter-spacing: normal;
+  tab-size: 8;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+}
+
+.markdown-input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--text);
+  resize: none;
+  outline: none;
+  z-index: 1;
+}
+
+.markdown-input::placeholder {
+  color: var(--text-placeholder);
+  -webkit-text-fill-color: var(--text-placeholder);
+}
+
+.markdown-input::selection {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  background: var(--accent-quiet);
+}
+
+/* without prism the overlay is not painted, so the field's own text shows */
+.editor-highlight-wrap.no-highlight .markdown-input {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+}
+
+.editor-highlight {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.editor-highlight code {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+/* ---------- resizer ---------- */
+
+.resizer {
+  width: 1px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  background: var(--line-soft);
   transition:
-    width var(--dur-base) var(--ease),
-    min-width var(--dur-base) var(--ease),
-    opacity var(--dur-base) var(--ease),
-    border-right-width var(--dur-base) var(--ease),
-    visibility 0s var(--dur-base);
+    width var(--dur-far) var(--ease-out),
+    background var(--dur-tint) var(--ease);
 }
-.editor-shell[data-mode="preview"] .preview-pane.narrow-width { flex: none; width: 60%; margin: 0 auto; }
+
+/* the hit area is wider than the painted line */
+.resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.resizer:hover,
+.resizer:focus-visible {
+  background: var(--accent);
+}
+
+/* no cursor override here: the shipped hidden-cursor rule must win */
+body.resizing,
+body.resizing * { user-select: none; }
+
+/* ---------- preview ---------- */
 
 .preview-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-5) var(--space-6);
   padding-bottom: var(--space-16);
-  font-size: var(--text-md);
-  line-height: 1.6;
-  color: var(--text-muted);
 }
 
-/* ---- Markdown body ---- */
-.preview-content h1,
-.preview-content h2,
-.preview-content h3,
-.preview-content h4,
-.preview-content h5,
-.preview-content h6 {
-  color: var(--text);
-  font-weight: 550;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  margin: 1.5em 0 0.6em;
-  scroll-margin-top: var(--space-8);
+.preview-content .prose { margin-inline: auto; }
+
+/* a focusable scroller inside the card: the global outline is clipped by the
+   card's edge, so the ring moves inside the scrollport */
+.preview-content:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
-.preview-content h1 {
-  font-size: 1.9em;
-  padding-bottom: 0.4em;
-  border-bottom: 1px solid var(--line);
-  font-weight: 600;
+
+/* ---------- table of contents ---------- */
+
+.toc-empty {
+  padding: 0 var(--space-2) var(--space-3);
+  font-size: var(--t-2);
+  color: var(--text-4);
 }
-.preview-content h2 {
-  font-size: 1.45em;
-  padding-bottom: 0.4em;
-  border-bottom: 1px solid var(--line);
+
+/* the level indent rides the rail: full when the column is expanded,
+   gone when folded, so the rail's 40px pills keep their centred dots */
+.sidebar .nav-item {
+  --indent: 0px;
+  padding-inline-start: calc(var(--space-2) + 9px * (1 - var(--rail)) + var(--indent) * var(--rail));
 }
-.preview-content h3 { font-size: 1.2em; }
-.preview-content h4 { font-size: 1.05em; }
-.preview-content h5 { font-size: 0.95em; color: var(--text-dim); }
-.preview-content h6 {
-  font-size: 0.9em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+
+.sidebar .toc-level-2 { --indent: var(--space-3); }
+.sidebar .toc-level-3 { --indent: var(--space-6); }
+
+/* ---------- heading anchors ---------- */
 
 .heading-anchor {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-left: var(--space-2);
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
   padding: 0;
+  border-color: transparent;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  color: var(--text-faint);
-  cursor: pointer;
+  color: var(--text-4);
+  margin-inline-start: var(--space-2);
   vertical-align: middle;
   opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  transition: opacity var(--dur-tint) var(--ease);
 }
-.heading-anchor:hover {
-  color: var(--accent);
-  background: var(--bg-hover);
-  border-color: var(--line-strong);
-}
+
+.prose :is(h1, h2, h3):hover .heading-anchor,
 .heading-anchor:focus-visible { opacity: 1; }
-.preview-content h1:hover .heading-anchor,
-.preview-content h2:hover .heading-anchor,
-.preview-content h3:hover .heading-anchor { opacity: 1; }
-.heading-anchor svg { width: 13px; height: 13px; }
 
-.preview-content p { margin: 0 0 1em; }
-.preview-content strong { color: var(--text); font-weight: 550; }
-.preview-content em { color: var(--text); }
-
-.preview-content ul,
-.preview-content ol { margin: 0 0 1em; padding-left: 1.5em; }
-.preview-content li { margin-bottom: 0.25em; }
-.preview-content input[type="checkbox"] {
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.preview-content input[type="checkbox"]:hover {
-  outline: 2px solid var(--accent-ring);
-  outline-offset: 1px;
+/* no hover to reveal them on touch: they stay visible, and the box takes
+   the tap floor the way the shipped controls do */
+@media (hover: none) {
+  .heading-anchor { opacity: 1; }
 }
 
-.preview-content blockquote {
-  border-left: 3px solid var(--line-strong);
-  margin: 0 0 1em;
-  padding: 0.1em 0 0.1em var(--space-4);
-  color: var(--text-dim);
+@media (pointer: coarse) {
+  .heading-anchor {
+    width: var(--ctl-lg);
+    min-width: var(--ctl-lg);
+    height: var(--ctl-lg);
+    min-height: var(--ctl-lg);
+  }
+  /* the head grows to fit its floor-sized control */
+  .pane-head {
+    height: auto;
+    min-height: var(--ctl-lg);
+  }
 }
 
-.preview-content a { color: var(--accent); text-decoration: none; }
-.preview-content a:hover { text-decoration: underline; }
+/* ---------- code blocks ---------- */
 
-/* ---- Footnotes ---- */
-.preview-content section.footnotes {
-  margin-top: var(--space-12);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--line);
-  font-size: var(--text-sm);
-  color: var(--text-dim);
-}
-.preview-content section.footnotes ol {
-  padding-left: 1.4em;
-  margin-bottom: 0;
-}
-.preview-content section.footnotes li { margin-bottom: var(--space-2); }
-.preview-content section.footnotes li > p { margin-bottom: 0; }
-.preview-content sup a[data-footnote-ref] {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 550;
-  padding: 0 1px;
-  margin-left: 1px;
-}
-.preview-content sup a[data-footnote-ref]:hover {
-  text-decoration: underline;
-  background: var(--accent-soft);
-}
-.preview-content a[data-footnote-backref] {
-  color: var(--text-faint);
-  text-decoration: none;
-  font-size: var(--text-xs);
-  margin-left: var(--space-1);
-}
-.preview-content a[data-footnote-backref]:hover { color: var(--accent); }
+.code-block { margin-block: var(--space-4); }
 
-.preview-content table {
-  border-collapse: collapse;
-  width: 100%;
-  display: block;
-  overflow-x: auto;
-  margin-bottom: 1em;
-}
-.preview-content th,
-.preview-content td {
-  border: 1px solid var(--line);
-  padding: 6px 13px;
-}
-.preview-content th {
-  background: var(--bg-raised);
-  color: var(--text);
-  font-weight: 450;
-}
-.preview-content tr:nth-child(2n) { background: var(--bg-raised); }
+.code-head { cursor: pointer; }
 
-.preview-content hr {
-  border: none;
-  border-top: 1px solid var(--line);
-  margin: var(--space-8) 0;
-}
-
-.preview-content img { max-width: 100%; border-radius: var(--radius); }
-
-/* inline code + blocks */
-.preview-content :not(pre) > code {
-  font: 400 var(--text-sm)/1.4 var(--font-mono);
-  background: var(--bg-sunken);
-  border: 1px solid var(--line-soft);
-  padding: 2px 6px;
-  border-radius: var(--radius);
-  color: var(--text-dim);
-}
-
-.preview-content .code-block {
-  margin: 1em 0;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.code-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: 0 var(--space-3);
-  min-height: 40px;
-  background: var(--bg-sunken);
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  user-select: none;
-  transition: background var(--dur-fast) var(--ease);
-}
-.code-header:hover { background: var(--bg-hover); }
-.code-header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
 .collapse-arrow {
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 6px solid var(--text-faint);
-  transition: transform var(--dur-fast) var(--ease);
-}
-.collapse-arrow.collapsed { transform: rotate(-90deg); }
-.language-label {
-  font: 600 11px/1 var(--font-mono);
-  color: var(--accent);
-  text-transform: lowercase;
-}
-.copy-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  height: 28px;
-  min-width: 28px;
-  padding: 0 8px;
-  background: var(--bg-hover);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  color: var(--text-dim);
-  font: 450 var(--text-xs)/1 var(--font-sans);
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
+  color: var(--text-4);
+  transition: transform var(--dur-tint) var(--ease);
 }
-.copy-button:hover { border-color: var(--line-strong); color: var(--text); }
-.copy-button.copied { background: var(--success); border-color: var(--success); color: var(--text-on-accent); }
-.copy-icon { width: 13px; height: 13px; }
 
-body.resizing, body.resizing * { cursor: col-resize !important; user-select: none; }
+.collapse-arrow.collapsed { transform: rotate(-90deg); }
 
-.code-content { overflow: hidden; transition: max-height var(--dur-base) var(--ease); }
-.code-content.collapsed { max-height: 0 !important; }
-.code-content pre {
-  margin: 0;
-  padding: var(--space-4);
-  background: var(--prism-bg);
-  overflow-x: auto;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: 1.55;
+/* the collapse's travel is its own block size, the accordion's named
+   deviation: a transform on the body would not shorten the flow around it */
+.code-content {
+  overflow: hidden;
+  transition: max-height var(--dur-far) var(--ease);
 }
-.code-content code { color: var(--text); white-space: pre; }
 
 .code-content.mermaid-rendered {
   padding: var(--space-4);
-  background: var(--bg-raised);
-  overflow-x: auto;
+  background: var(--well);
+  --tint-ground: transparent;
 }
+
 .code-content.mermaid-rendered svg {
   display: block;
   max-width: 100%;
@@ -626,7 +403,144 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
   margin: 0 auto;
 }
 
-/* ---- Prism theme (local palette) ---- */
+/* ---------- callouts ---------- */
+
+.callout { margin-block: var(--space-4); }
+
+/* ---------- footnotes ---------- */
+
+.prose section.footnotes {
+  margin-top: var(--space-12);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-2);
+  color: var(--text-3);
+}
+
+.prose section.footnotes ol {
+  padding-inline-start: 1.4em;
+  margin-bottom: 0;
+}
+
+.prose section.footnotes li { margin-bottom: var(--space-2); }
+.prose section.footnotes li > p { margin-bottom: 0; }
+
+.prose sup a[data-footnote-ref] {
+  color: var(--accent-text);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0 1px;
+  margin-left: 1px;
+}
+
+.prose sup a[data-footnote-ref]:hover {
+  text-decoration: underline;
+  background: var(--accent-quiet);
+}
+
+.prose a[data-footnote-backref] {
+  color: var(--text-4);
+  text-decoration: none;
+  font-size: var(--t-1);
+  margin-left: var(--space-1);
+}
+
+.prose a[data-footnote-backref]:hover { color: var(--accent-text); }
+
+/* ---------- task lists ---------- */
+
+.prose input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.prose input[type="checkbox"]:hover {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 1px;
+}
+
+/* ---------- scroll to top ---------- */
+
+.scroll-to-top {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition:
+    background var(--dur-tint) var(--ease),
+    border-color var(--dur-tint) var(--ease),
+    color var(--dur-tint) var(--ease),
+    opacity var(--dur-near) var(--ease-out),
+    transform var(--dur-near) var(--ease-out),
+    visibility 0s var(--dur-near);
+}
+
+.scroll-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* ---------- the brand mark ---------- */
+
+/* the cat replaces the striped placeholder and takes the accent */
+.sidebar-logo .sona {
+  width: 28px;
+  height: 28px;
+  background-image: none;
+  color: var(--accent);
+}
+
+.sidebar-logo .sona svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- the prism theme ---------- */
+
+:root {
+  --prism-comment: var(--text-4);
+  --prism-punctuation: var(--text-3);
+  --prism-keyword: var(--cat-mauve);
+  --prism-string: var(--cat-green);
+  --prism-number: var(--cat-peach);
+  --prism-function: var(--cat-blue);
+  --prism-class: var(--cat-sapphire);
+  --prism-tag: var(--cat-red);
+  --prism-attr: var(--cat-teal);
+  --prism-operator: var(--cat-sky);
+  --prism-boolean: var(--cat-yellow);
+  --prism-regex: var(--cat-yellow);
+  --prism-builtin: var(--cat-lavender);
+  --prism-property: var(--cat-blue);
+  --prism-interpolation: var(--cat-pink);
+  --prism-atrule: var(--cat-green);
+}
+
+/* the ramp's light values sit under the 4.5:1 floor on --well, so the
+   ramp-derived tokens clamp their lightness there; the two text-token
+   steps are already theme-aware and stay */
+[data-theme="light"] {
+  --prism-keyword: oklch(from var(--cat-mauve) min(l, 0.48) c h);
+  --prism-string: oklch(from var(--cat-green) min(l, 0.48) c h);
+  --prism-number: oklch(from var(--cat-peach) min(l, 0.48) c h);
+  --prism-function: oklch(from var(--cat-blue) min(l, 0.48) c h);
+  --prism-class: oklch(from var(--cat-sapphire) min(l, 0.48) c h);
+  --prism-tag: oklch(from var(--cat-red) min(l, 0.48) c h);
+  --prism-attr: oklch(from var(--cat-teal) min(l, 0.48) c h);
+  --prism-operator: oklch(from var(--cat-sky) min(l, 0.48) c h);
+  --prism-boolean: oklch(from var(--cat-yellow) min(l, 0.48) c h);
+  --prism-regex: oklch(from var(--cat-yellow) min(l, 0.48) c h);
+  --prism-builtin: oklch(from var(--cat-lavender) min(l, 0.48) c h);
+  --prism-property: oklch(from var(--cat-blue) min(l, 0.48) c h);
+  --prism-interpolation: oklch(from var(--cat-pink) min(l, 0.48) c h);
+  --prism-atrule: oklch(from var(--cat-green) min(l, 0.48) c h);
+}
+
 .token.comment,
 .token.prolog,
 .token.doctype,
@@ -646,8 +560,7 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 .token.maybe-class-name,
 .token.function-variable { color: var(--prism-function); }
 .token.class-name,
-.token.type-name,
-.token.builtin { color: var(--prism-class); }
+.token.type-name { color: var(--prism-class); }
 .token.tag,
 .token.deleted { color: var(--prism-tag); }
 .token.attr-name,
@@ -658,115 +571,121 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
 .token.entity { color: var(--prism-operator); }
 .token.boolean { color: var(--prism-boolean); }
 .token.regex { color: var(--prism-regex); }
+.token.builtin,
+.token.constant { color: var(--prism-builtin); }
 .token.property { color: var(--prism-property); }
 .token.interpolation,
 .token.template-punctuation { color: var(--prism-interpolation); }
-.token.constant { color: var(--prism-builtin); }
 .token.atrule,
-.token.url { color: var(--prism-string); }
+.token.url { color: var(--prism-atrule); }
 .token.url .token.function { color: var(--prism-attr); }
 .token.url .token.punctuation { color: var(--prism-punctuation); }
 
-/* ---- Scroll to top ---- */
-.scroll-to-top {
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-6);
-  width: 40px;
-  height: 40px;
-  background: var(--bg-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-dim);
-  transition: all var(--dur-fast) var(--ease);
-  z-index: 900;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(8px);
-}
-.scroll-to-top:hover { border-color: var(--line-strong); color: var(--text); background: var(--bg-hover); }
-.scroll-to-top.visible { opacity: 1; visibility: visible; transform: translateY(0); }
-.scroll-to-top svg { width: 16px; height: 16px; }
+/* markdown tokens in the editor overlay */
+.editor-highlight .token.title { color: var(--prism-function); }
+.editor-highlight .token.bold { font-weight: 600; color: var(--prism-keyword); }
+.editor-highlight .token.italic { font-style: italic; color: var(--prism-builtin); }
+.editor-highlight .token.strike { text-decoration: line-through; color: var(--prism-comment); }
+.editor-highlight .token.code-snippet { color: var(--prism-string); }
+.editor-highlight .token.code-language { color: var(--prism-comment); }
 
-/* ---- Mobile ---- */
+/* ---------- mobile ---------- */
+
 @media (max-width: 768px) {
-  /* the desktop bar hands over to the topbar below this width */
-  .navbar { display: none; }
-  .mobile-modes {
+  .mobile-actions {
     display: flex;
-    justify-content: center;
-    padding: var(--space-2) var(--space-4);
-    border-bottom: 1px solid var(--line-soft);
+    align-items: center;
+    gap: var(--space-2);
   }
-  .main-col { height: 100dvh; }
-  .preview-content { padding: var(--space-5) var(--space-4); }
+
+  /* the app bar wraps to two rows: title full width, then modes + actions */
+  .app-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: var(--space-2);
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+  /* the segment's side padding is costume, not the tap floor: trimmed so the
+     modes and actions share one row from 390px of viewport up */
+  .app-bar .tab-box { padding-inline: var(--space-2); }
+  .app-bar-title { flex: 1 0 100%; order: -1; }
+  .app-bar-actions { flex: 0 0 auto; }
+
+  .editor-area { padding: var(--space-3); }
+  .preview-content {
+    padding: var(--space-5) var(--space-4);
+    padding-bottom: var(--space-16);
+  }
   .scroll-to-top { bottom: var(--space-4); right: var(--space-4); }
 
+  /* the panes stack and the split moves vertically */
   .editor-shell { flex-direction: column; }
+  .editor-shell[data-mode] .input-pane { width: 100%; }
   .input-pane {
-    width: 100% !important;
     height: 45vh;
     min-width: 0;
     flex-shrink: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
     transition:
-      height var(--dur-base) var(--ease),
-      opacity var(--dur-base) var(--ease),
-      border-bottom-width var(--dur-base) var(--ease);
+      height var(--dur-far) var(--ease-out),
+      opacity var(--dur-far) var(--ease-out);
   }
   .editor-shell[data-mode="markdown"] .input-pane { height: 100%; }
   .editor-shell[data-mode="preview"] .input-pane {
     height: 0;
     min-height: 0;
-    border-bottom-width: 0;
     opacity: 0;
     visibility: hidden;
     transition:
-      height var(--dur-base) var(--ease),
-      opacity var(--dur-base) var(--ease),
-      border-bottom-width var(--dur-base) var(--ease),
-      visibility 0s var(--dur-base);
+      height var(--dur-out-far) var(--ease),
+      opacity var(--dur-out-far) var(--ease),
+      visibility 0s var(--dur-out-far);
   }
-  .preview-pane {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-  }
+  .preview-pane { min-width: 0; min-height: 0; }
   .resizer { display: none; }
-  .editor-shell[data-mode="preview"] .preview-pane { flex: 1; }
-  .editor-shell[data-mode="preview"] .preview-pane.narrow-width { width: 100%; margin: 0; }
 
-  /* 16px so iOS does not auto-zoom on focus; textarea and overlay stay metric-identical */
+  /* 16px so iOS does not auto-zoom on focus; both layers stay identical */
   .markdown-input,
-  .editor-highlight {
-    font-size: 16px;
-  }
+  .editor-highlight { font-size: var(--t-4); }
 }
 
-/* ---- Print (save-as-pdf renders only the preview) ---- */
+/* ---------- reduced motion: fades stay, travel snaps ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-to-top,
+  .collapse-arrow,
+  .code-content,
+  .heading-anchor,
+  .editor-shell[data-mode] .input-pane,
+  .editor-shell[data-mode] .preview-pane,
+  .editor-shell[data-mode] .resizer {
+    transition: none;
+  }
+  .scroll-to-top { transform: translateY(8px); }
+  .scroll-to-top.visible { transform: translateY(0); }
+}
+
+/* ---------- print: the preview, flattened ---------- */
+
 @media print {
-  .navbar,
   .sidebar,
-  .sidebar-overlay,
+  .app-bar,
   .mobile-topbar,
-  .mobile-modes,
-  .resizer,
+  .sidebar-overlay,
+  .pane-head,
   .input-pane,
-  .pane-header,
+  .resizer,
   .toast-stack,
-  .scroll-to-top {
+  .scroll-to-top,
+  .skip-link {
     display: none !important;
   }
 
+  body { display: block; height: auto; overflow: visible; }
+
   .layout,
-  .workspace,
   .main-col,
-  .editor-wrap,
+  .editor-area,
   .editor-shell,
   .preview-pane,
   .preview-content {
@@ -774,81 +693,19 @@ body.resizing, body.resizing * { cursor: col-resize !important; user-select: non
     width: 100% !important;
     height: auto !important;
     overflow: visible !important;
-    flex: none !important;
   }
 
-  .editor-shell {
-    border: none !important;
+  /* whatever mode is active, the preview prints */
+  .preview-pane {
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
-  .preview-content {
-    padding: 0 !important;
-  }
+  .editor-shell.card { box-shadow: none; }
+  .editor-area { padding: 0; }
+  .preview-content { padding: 0 !important; }
+  .preview-content .prose { max-width: none; }
 
-  .code-content pre,
-  .preview-content :not(pre) > code {
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-  }
-  .code-content pre code {
-    white-space: pre-wrap !important;
-    overflow-wrap: anywhere;
-  }
-  .code-block,
-  .code-content,
-  .code-content pre {
-    overflow: visible !important;
-  }
-
-  /* force a light, ink-friendly palette regardless of the active theme */
-  :root,
-  [data-theme="dark"],
-  [data-theme="light"] {
-    --bg: #ffffff;
-    --bg-raised: #ffffff;
-    --bg-sunken: #f4f4f6;
-    --bg-hover: #eceef2;
-    --line: #dddddd;
-    --line-strong: #bbbbbb;
-    --line-soft: #eeeeee;
-    --text: #1a1a2e;
-    --text-muted: #333344;
-    --text-dim: #555566;
-    --text-faint: #888899;
-    --text-on-accent: #ffffff;
-    --accent: #1f6f9f;
-    --info: #209fb5;
-    --success: #40a02b;
-    --warning: #df8e1d;
-    --danger: #d20f39;
-
-    /* the system tokens a shipped component inside the preview reads */
-    --surface-1: #ffffff;
-    --surface-2: #eceef2;
-    --surface-3: #eceef2;
-    --well: #f4f4f6;
-    --text-2: #333344;
-    --text-3: #555566;
-    --text-4: #888899;
-    --accent-text: #1f6f9f;
-    --lit-1: none;
-
-    --prism-bg: #f4f4f6;
-    --prism-comment: #6c6f85;
-    --prism-punctuation: #6c6f85;
-    --prism-keyword: #8839ef;
-    --prism-string: #40a02b;
-    --prism-number: #fe640b;
-    --prism-function: #1e66f5;
-    --prism-class: #ea76cb;
-    --prism-tag: #d20f39;
-    --prism-attr: #179299;
-    --prism-operator: #04a5e5;
-    --prism-boolean: #df8e1d;
-    --prism-builtin: #209fb5;
-    --prism-regex: #df8e1d;
-    --prism-variable: #4c4f69;
-    --prism-property: #1e66f5;
-    --prism-interpolation: #ea76cb;
-  }
+  pre { white-space: pre-wrap !important; }
+  pre code { overflow-wrap: anywhere; }
 }

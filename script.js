@@ -1,4 +1,4 @@
-import { showToast, initSidebar } from './ui.js';
+import { showToast, initSidebar, initCodeCopy } from './ui.js';
 
 (() => {
     'use strict';
@@ -19,12 +19,12 @@ import { showToast, initSidebar } from './ui.js';
     /* ---------- app ---------- */
     const input = $('#markdownInput');
     const preview = $('#previewContent');
+    const previewBody = $('#previewBody');
     const resizer = $('#resizer');
     const inputPane = $('#inputPane');
     const previewPane = $('#previewPane');
     const editorContainer = $('#editorContainer');
     const modeBtns = Array.from(document.querySelectorAll('.tabs-boxed-wrap .tab-box'));
-    const toggleWidthBtn = $('#toggleWidthBtn');
     const scrollSyncBtn = $('#scrollSyncBtn');
     const copyMdBtn = $('#copyMdBtn');
     const downloadMdBtn = $('#downloadMdBtn');
@@ -285,17 +285,16 @@ just start typing :3`;
                 const text = escapeHtml(decodeHtml(codeHtml));
                 const collapsed = collapsedBlocks.has(text);
                 return `<div class="code-block">
-                    <div class="code-header" role="button" tabindex="0" aria-expanded="${!collapsed}"
+                    <div class="code-head" role="button" tabindex="0" aria-expanded="${!collapsed}"
                         aria-label="${collapsed ? 'expand' : 'collapse'} code block (${language})">
-                        <div class="code-header-left">
-                            <span class="collapse-arrow${collapsed ? ' collapsed' : ''}"></span>
-                            <span class="language-label">${language}</span>
-                        </div>
-                        <button class="copy-button" type="button" title="copy code" aria-label="copy code">
-                            <svg class="copy-icon" aria-hidden="true"><use href="#i-copy"/></svg>
-                        </button>
+                        <svg class="collapse-arrow${collapsed ? ' collapsed' : ''}" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+                        <span class="language-label">${language}</span>
                     </div>
-                    <div class="code-content${collapsed ? ' collapsed' : ''}" data-raw="${text}"${collapsed ? ' style="max-height:0px"' : ''}>
+                    <div class="code-body code-content${collapsed ? ' collapsed' : ''}" data-raw="${text}"${collapsed ? ' style="max-height:0px"' : ''}>
+                        <button class="code-copy" type="button" aria-label="copy code">
+                            <svg class="icon-copy" aria-hidden="true"><use href="#i-copy"/></svg>
+                            <svg class="icon-check" hidden aria-hidden="true"><use href="#i-check"/></svg>
+                        </button>
                         <pre><code class="language-${language}">${text}</code></pre>
                     </div>
                 </div>`;
@@ -310,33 +309,45 @@ just start typing :3`;
         });
     }
 
+    function wrapTables(root) {
+        root.querySelectorAll('table').forEach((table) => {
+            if (table.closest('.table-wrap')) return;
+            const wrap = document.createElement('div');
+            wrap.className = 'table-wrap';
+            table.parentNode.insertBefore(wrap, table);
+            wrap.appendChild(table);
+        });
+    }
+
     function renderPreview() {
         const markdown = input.value;
         if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
-            preview.innerHTML = '<p>editor libraries failed to load. hard refresh?</p>';
+            previewBody.innerHTML = '<p>editor libraries failed to load. hard refresh?</p>';
             return;
         }
         let html;
         try {
             html = marked.parse(markdown);
         } catch (err) {
-            preview.innerHTML = '<p>could not parse markdown.</p>';
+            previewBody.innerHTML = '<p>could not parse markdown.</p>';
             return;
         }
-        preview.innerHTML = processCodeBlocks(DOMPurify.sanitize(html, { FORBID_ATTR: ['style'] }));
+        previewBody.innerHTML = processCodeBlocks(DOMPurify.sanitize(html, { FORBID_ATTR: ['style'] }));
+        wrapTables(previewBody);
         if (window.Prism) {
-            preview.querySelectorAll('pre code[class*="language-"]').forEach((block) => {
+            previewBody.querySelectorAll('pre code[class*="language-"]').forEach((block) => {
                 if (block.classList.contains('language-mermaid')) return;
                 Prism.highlightElement(block);
             });
         }
-        buildCallouts(preview);
+        buildCallouts(previewBody);
         buildToc();
         wireTaskLists();
         renderMermaidBlocks();
+        initCodeCopy();
     }
 
-    function buildCallouts(preview) {
+    function buildCallouts(root) {
         const types = {
             NOTE: ['info', 'Note'],
             TIP: ['success', 'Tip'],
@@ -344,7 +355,7 @@ just start typing :3`;
             WARNING: ['warning', 'Warning'],
             CAUTION: ['danger', 'Caution'],
         };
-        preview.querySelectorAll('blockquote').forEach((bq) => {
+        root.querySelectorAll('blockquote').forEach((bq) => {
             const first = bq.firstElementChild;
             if (!first || first.tagName !== 'P') return;
             const textNode = first.firstChild;
@@ -362,18 +373,20 @@ just start typing :3`;
             const callout = document.createElement('div');
             callout.className = `callout callout-${semantic}`;
             const glyph = { info: 'i-info', success: 'i-success', warning: 'i-warning', danger: 'i-error' }[semantic] || 'i-info';
-            const icon = document.createElement('div');
+            const icon = document.createElement('span');
             icon.className = 'callout-icon';
             icon.innerHTML = `<svg aria-hidden="true"><use href="#${glyph}"/></svg>`;
+            const panel = document.createElement('div');
             const title = document.createElement('div');
             title.className = 'callout-title';
             title.textContent = label;
             const body = document.createElement('div');
             body.className = 'callout-body';
             while (bq.firstChild) body.appendChild(bq.firstChild);
+            panel.appendChild(title);
+            panel.appendChild(body);
             callout.appendChild(icon);
-            callout.appendChild(title);
-            callout.appendChild(body);
+            callout.appendChild(panel);
             bq.replaceWith(callout);
         });
     }
@@ -389,9 +402,8 @@ just start typing :3`;
     function addHeadingAnchor(heading) {
         if (heading.querySelector('.heading-anchor')) return;
         const btn = document.createElement('button');
-        btn.className = 'heading-anchor';
+        btn.className = 'btn btn-icon btn-sm heading-anchor';
         btn.type = 'button';
-        btn.title = 'copy link to this heading';
         btn.setAttribute('aria-label', 'copy link to this heading');
         btn.innerHTML = '<svg aria-hidden="true"><use href="#i-copy"/></svg>';
         btn.addEventListener('click', () => {
@@ -416,7 +428,7 @@ just start typing :3`;
     }
 
     function buildToc() {
-        const headings = Array.from(preview.querySelectorAll('h1, h2, h3'))
+        const headings = Array.from(previewBody.querySelectorAll('h1, h2, h3'))
             .filter((h) => !h.closest('section.footnotes'));
         const items = [];
 
@@ -438,12 +450,9 @@ just start typing :3`;
             const level = parseInt(heading.tagName.charAt(1), 10);
             const text = heading.textContent.trim();
             addHeadingAnchor(heading);
-            const li = document.createElement('li');
-            li.className = 'toc-item';
             const btn = document.createElement('button');
             btn.className = `nav-item toc-level-${level}`;
             btn.type = 'button';
-            btn.title = text;
             const span = document.createElement('span');
             span.textContent = text;
             btn.appendChild(span);
@@ -454,15 +463,11 @@ just start typing :3`;
                 const scrollTarget = hRect.top - pRect.top + preview.scrollTop - 48;
                 preview.scrollTo({ top: scrollTarget, behavior: 'smooth' });
             });
-            li.appendChild(btn);
             items.push({ el: heading, link: btn, level });
         });
 
         tocContent.innerHTML = '';
-        const ul = document.createElement('ul');
-        ul.className = 'toc-list';
-        items.forEach((it) => ul.appendChild(it.link.parentElement));
-        tocContent.appendChild(ul);
+        items.forEach((it) => tocContent.appendChild(it.link));
 
         tocItems = items;
         // rows are rebuilt per keystroke, so each build wires the new rows' dots
@@ -504,31 +509,13 @@ just start typing :3`;
 
     /* ---------- code blocks ---------- */
     preview.addEventListener('click', (e) => {
-        const copyBtn = e.target.closest('.copy-button');
-        if (copyBtn) {
-            const content = copyBtn.closest('.code-block').querySelector('.code-content');
-            const raw = content.dataset.raw || '';
-            copyText(raw).then(() => {
-                const original = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<svg class="copy-icon" aria-hidden="true"><use href="#i-check"/></svg>';
-                copyBtn.classList.add('copied');
-                setTimeout(() => {
-                    copyBtn.innerHTML = original;
-                    copyBtn.classList.remove('copied');
-                }, 1800);
-            }).catch(() => {
-                showToast('danger', 'copy failed', 'clipboard access was denied');
-            });
-            return;
-        }
-        const header = e.target.closest('.code-header');
+        const header = e.target.closest('.code-head');
         if (header) toggleCodeBlock(header);
     });
 
     preview.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
-        if (e.target.closest('.copy-button')) return;
-        const header = e.target.closest('.code-header');
+        const header = e.target.closest('.code-head');
         if (!header) return;
         e.preventDefault();
         toggleCodeBlock(header);
@@ -547,24 +534,27 @@ just start typing :3`;
         }
         arrow.classList.toggle('collapsed', collapsed);
         header.setAttribute('aria-expanded', String(!collapsed));
-        header.setAttribute('aria-label', `${collapsed ? 'expand' : 'collapse'} code block`);
+        const language = header.querySelector('.language-label')?.textContent || '';
+        header.setAttribute('aria-label', `${collapsed ? 'expand' : 'collapse'} code block (${language})`);
         content.style.maxHeight = collapsed ? '0px' : content.scrollHeight + 'px';
     }
 
-    /* ---------- sidebar rail (desktop) ---------- */
+    /* ---------- sidebar collapse (desktop) ---------- */
+    /* ui.js's controller owns the .rail class on click; it ran first (this
+       module imports it), so this listener observes the new state, persists
+       it and re-labels the button in the page's own voice */
     const sidebarToggle = $('#sidebarToggle');
     if (sidebarToggle) {
-        const setRail = (folded) => {
-            sidebarEl.classList.toggle('rail', folded);
+        const syncSidebarToggle = () => {
+            const folded = sidebarEl.classList.contains('rail');
             sidebarToggle.setAttribute('aria-expanded', String(!folded));
-            sidebarToggle.title = folded ? 'show table of contents' : 'hide table of contents';
-            sidebarToggle.setAttribute('aria-label', folded ? 'show table of contents' : 'hide table of contents');
+            sidebarToggle.setAttribute('aria-label', folded ? 'show contents' : 'hide contents');
         };
-        setRail(storage.get('meowmd_sidebar') === 'collapsed');
+        sidebarEl.classList.toggle('rail', storage.get('meowmd_sidebar') === 'collapsed');
+        syncSidebarToggle();
         sidebarToggle.addEventListener('click', () => {
-            const folded = !sidebarEl.classList.contains('rail');
-            storage.set('meowmd_sidebar', folded ? 'collapsed' : 'open');
-            setRail(folded);
+            storage.set('meowmd_sidebar', sidebarEl.classList.contains('rail') ? 'collapsed' : 'open');
+            syncSidebarToggle();
         });
     }
 
@@ -585,9 +575,6 @@ just start typing :3`;
             const savedSplit = storage.get('meowmd_split');
             if (savedSplit) inputPane.style.width = savedSplit;
         }
-        const previewMode = mode === 'preview';
-        toggleWidthBtn.classList.toggle('hidden', !previewMode);
-        if (mode === 'split') previewPane.classList.remove('narrow-width');
         modeBtns.forEach((btn) => {
             const active = btn.dataset.mode === mode;
             btn.classList.toggle('active', active);
@@ -600,13 +587,6 @@ just start typing :3`;
     }
     modeBtns.forEach((btn) => {
         btn.addEventListener('click', () => applyMode(btn.dataset.mode));
-    });
-
-    toggleWidthBtn.addEventListener('click', () => {
-        const narrow = previewPane.classList.toggle('narrow-width');
-        toggleWidthBtn.title = narrow ? 'expand preview' : 'narrow preview';
-        toggleWidthBtn.setAttribute('aria-label', narrow ? 'expand preview' : 'narrow preview');
-        toggleWidthBtn.setAttribute('aria-pressed', String(narrow));
     });
 
     /* ---------- export ---------- */
@@ -675,7 +655,7 @@ just start typing :3`;
     }
     function wireTaskLists() {
         const indexes = taskListLineIndexes(input.value);
-        preview.querySelectorAll('input[type="checkbox"]').forEach((box, i) => {
+        previewBody.querySelectorAll('input[type="checkbox"]').forEach((box, i) => {
             const lineIdx = indexes[i];
             if (lineIdx === undefined) return;
             box.disabled = false;
@@ -831,14 +811,25 @@ just start typing :3`;
         return (h >>> 0).toString(36);
     }
 
+    /* the copy button lives inside .code-content, so the diagram replaces the
+       source block beside it and never the whole container */
+    function mountMermaid(content, svg) {
+        content.querySelector('.mermaid-diagram')?.remove();
+        content.querySelector('pre')?.remove();
+        const diagram = document.createElement('div');
+        diagram.className = 'mermaid-diagram';
+        diagram.innerHTML = svg;
+        content.appendChild(diagram);
+        content.classList.add('mermaid-rendered');
+    }
+
     async function renderMermaidBlock(block) {
         const content = block.querySelector('.code-content');
         const source = (content && content.dataset.raw) || '';
         if (!source.trim()) return;
         const key = mermaidKey(source);
         if (mermaidCache.has(key)) {
-            content.innerHTML = mermaidCache.get(key);
-            content.classList.add('mermaid-rendered');
+            mountMermaid(content, mermaidCache.get(key));
             return;
         }
         let inflight = mermaidInflight.get(key);
@@ -860,9 +851,7 @@ just start typing :3`;
             mermaidInflight.set(key, inflight);
         }
         try {
-            const clean = await inflight;
-            content.innerHTML = clean;
-            content.classList.add('mermaid-rendered');
+            mountMermaid(content, await inflight);
         } catch (err) {
             content.classList.remove('mermaid-rendered');
         }
@@ -870,7 +859,7 @@ just start typing :3`;
 
     function renderMermaidBlocks() {
         let found = false;
-        preview.querySelectorAll('.code-block').forEach((block) => {
+        previewBody.querySelectorAll('.code-block').forEach((block) => {
             const label = block.querySelector('.language-label');
             if (!label || label.textContent.trim().toLowerCase() !== 'mermaid') return;
             found = true;

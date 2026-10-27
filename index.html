@@ -219,93 +219,93 @@
 
     <a class="skip-link" href="#mainCol">skip to content</a>
 
-    <div class="layout">
+    <div class="mobile-topbar">
+        <div class="logo-name">meowmd</div>
+        <div class="mobile-actions">
+            <button class="btn btn-icon" data-theme-toggle aria-pressed="false" aria-label="switch to light theme">
+                <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+                <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+            </button>
+            <button class="hamburger" id="hamburger-btn" aria-label="open contents" aria-controls="sidebar"
+                aria-expanded="false">
+                <svg aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+        </div>
+    </div>
 
-        <div class="mobile-topbar">
-            <div class="mobile-brand">meowmd</div>
-            <div class="mobile-actions">
-                <button class="btn btn-icon" data-theme-toggle aria-pressed="false" aria-label="switch to light theme">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="layout">
+        <nav class="sidebar" id="sidebar" aria-label="document contents">
+            <div class="sidebar-logo">
+                <span class="sona" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" aria-hidden="true">
+                        <path d="M5 8l4-4v4M27 8l-4-4v4" fill="currentColor"/>
+                        <circle cx="16" cy="19" r="11" fill="currentColor"/>
+                        <circle cx="12" cy="20" r="1.6" fill="var(--well)"/>
+                        <circle cx="20" cy="20" r="1.6" fill="var(--well)"/>
+                        <path d="M12 24.5c1.2 1.1 2.8 1.1 4 0" stroke="var(--well)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </span>
+                <div>
+                    <div class="logo-name">meowmd</div>
+                </div>
+                <button class="sidebar-collapse" id="sidebarToggle" type="button" aria-controls="sidebar"
+                    aria-expanded="true" aria-label="hide contents">
+                    <svg aria-hidden="true"><use href="#i-chevron-left"/></svg>
+                </button>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-group">
+                    <div class="nav-group-label">contents</div>
+                    <div id="tocContent">
+                        <p class="toc-empty">start typing to see headings...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <button class="btn btn-icon btn-sm" data-theme-toggle aria-pressed="false" aria-label="switch to light theme">
                     <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
                     <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
                 </button>
-                <button class="hamburger" id="hamburger-btn" aria-label="open table of contents" aria-controls="sidebar"
-                    aria-expanded="false">
-                    <svg aria-hidden="true"><use href="#i-menu"/></svg>
-                </button>
+                <span class="sidebar-user-name">theme</span>
             </div>
-        </div>
+        </nav>
 
-        <div class="mobile-modes">
-            <div class="tabs-boxed-wrap" role="group" aria-label="view mode">
-                <button class="tab-box active" type="button" data-mode="split" aria-pressed="true">split</button>
-                <button class="tab-box" type="button" data-mode="markdown" aria-pressed="false">markdown</button>
-                <button class="tab-box" type="button" data-mode="preview" aria-pressed="false">preview</button>
-            </div>
-        </div>
-
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-        <nav class="navbar" id="navbar" aria-label="primary">
-            <button class="btn btn-icon navbar-toggle" id="sidebarToggle" type="button"
-                title="hide table of contents" aria-label="hide table of contents" aria-expanded="true"
-                aria-controls="sidebar">
-                <svg aria-hidden="true"><use href="#i-chevron-left"/></svg>
-            </button>
-            <div class="navbar-brand">
-                <div class="logo-name">meowmd</div>
-            </div>
-            <div class="navbar-modes">
+        <div class="main-col">
+            <header class="app-bar">
                 <div class="tabs-boxed-wrap" role="group" aria-label="view mode">
                     <button class="tab-box active" type="button" data-mode="split" aria-pressed="true">split</button>
                     <button class="tab-box" type="button" data-mode="markdown" aria-pressed="false">markdown</button>
                     <button class="tab-box" type="button" data-mode="preview" aria-pressed="false">preview</button>
                 </div>
-            </div>
-            <div class="navbar-title">
-                <input type="text" id="titleInput" class="input title-input" placeholder="document title"
-                    aria-label="document title" spellcheck="false" autocomplete="off">
-            </div>
-            <div class="navbar-actions">
-                <button class="btn btn-icon" data-theme-toggle aria-pressed="false" aria-label="switch to light theme">
-                    <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
-                    <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
-                </button>
-                <button class="btn btn-icon" id="copyMdBtn" type="button" title="copy markdown" aria-label="copy markdown">
-                    <svg aria-hidden="true"><use href="#i-copy"/></svg>
-                </button>
-                <button class="btn btn-icon" id="downloadMdBtn" type="button" title="download .md" aria-label="download markdown as .md file">
-                    <svg aria-hidden="true"><use href="#i-download"/></svg>
-                </button>
-                <a class="btn btn-icon" href="https://github.com/uwuclxdy/meowmd" target="_blank" rel="noopener noreferrer"
-                    title="view on github" aria-label="view on github">
-                    <svg aria-hidden="true"><use href="#i-external"/></svg>
-                </a>
-            </div>
-        </nav>
-
-        <div class="workspace">
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-nav">
-                    <div class="nav-group" id="tocGroup">
-                        <div class="nav-group-label">contents</div>
-                        <div id="tocContent">
-                            <p class="toc-empty">start typing to see headings...</p>
-                        </div>
-                    </div>
+                <div class="app-bar-title">
+                    <input type="text" id="titleInput" class="input title-input" placeholder="untitled"
+                        aria-label="document title" spellcheck="false" autocomplete="off">
                 </div>
-            </div>
-
-            <main class="main-col" id="mainCol" tabindex="-1">
-                <div class="editor-wrap">
-                <div class="editor-shell" id="editorContainer">
-                    <div class="input-pane" id="inputPane">
-                        <div class="pane-header">
+                <div class="app-bar-actions">
+                    <button class="btn btn-icon" id="copyMdBtn" type="button" aria-label="copy markdown">
+                        <svg aria-hidden="true"><use href="#i-copy"/></svg>
+                    </button>
+                    <button class="btn btn-icon" id="downloadMdBtn" type="button" aria-label="download markdown as .md">
+                        <svg aria-hidden="true"><use href="#i-download"/></svg>
+                    </button>
+                    <a class="btn btn-icon" href="https://github.com/uwuclxdy/meowmd" target="_blank" rel="noopener noreferrer"
+                        aria-label="view source on github">
+                        <svg aria-hidden="true"><use href="#i-external"/></svg>
+                    </a>
+                </div>
+            </header>
+            <main class="editor-area" id="mainCol" tabindex="-1">
+                <div class="card editor-shell" id="editorContainer" data-mode="split">
+                    <section class="input-pane" id="inputPane" aria-label="markdown editor">
+                        <div class="pane-head">
                             <span class="label">markdown</span>
-                            <span class="word-count" id="wordCount"></span>
+                            <span class="word-count num" id="wordCount"></span>
                         </div>
                         <div class="editor-highlight-wrap">
                             <pre class="editor-highlight" id="editorHighlight" aria-hidden="true"><code class="language-markdown" id="editorHighlightCode"></code></pre>
-                            <textarea id="markdownInput" class="markdown-input" spellcheck="false" placeholder="# markdown goes here~
+                            <textarea id="markdownInput" class="markdown-input no-scroll-fade" data-scroll-fade aria-label="markdown document" spellcheck="false" placeholder="# markdown goes here~
 
 ## some stuff you can do
 - **bold** and *italic* text
@@ -315,35 +315,30 @@
 
 just start typing :3"></textarea>
                         </div>
-                    </div>
-
+                    </section>
                     <div class="resizer" id="resizer" role="separator" aria-orientation="vertical"
-                        title="drag to resize" tabindex="0"></div>
-
-                    <div class="preview-pane" id="previewPane">
-                        <div class="pane-header">
+                        aria-label="resize panes" tabindex="0"></div>
+                    <section class="preview-pane" id="previewPane">
+                        <div class="pane-head">
                             <span class="label">preview</span>
-                            <div class="pane-header-actions">
-                                <button class="btn btn-icon hidden" id="toggleWidthBtn" type="button" title="narrow preview"
-                                    aria-label="narrow preview" aria-pressed="false">
-                                    <svg aria-hidden="true"><use href="#i-chevron-left"/></svg>
-                                </button>
-                                <button class="btn btn-icon scroll-sync-toggle" id="scrollSyncBtn" type="button"
-                                    title="sync editor and preview scroll" aria-label="sync editor and preview scroll"
-                                    aria-pressed="false">
+                            <div class="pane-head-actions">
+                                <button class="btn btn-icon btn-sm" id="scrollSyncBtn" type="button" aria-pressed="false"
+                                    aria-label="sync editor and preview scroll">
                                     <svg aria-hidden="true"><use href="#i-refresh"/></svg>
                                 </button>
                             </div>
                         </div>
-                        <div class="preview-content" id="previewContent"></div>
-                    </div>
-                </div>
+                        <div class="preview-content" id="previewContent" role="region" aria-label="preview" tabindex="0"
+                            data-scroll-fade>
+                            <div class="prose" id="previewBody"></div>
+                        </div>
+                    </section>
                 </div>
             </main>
         </div>
     </div>
 
-    <button class="scroll-to-top" id="scrollToTop" type="button" title="back to top" aria-label="back to top">
+    <button class="btn btn-icon scroll-to-top" id="scrollToTop" type="button" aria-label="back to top">
         <svg aria-hidden="true"><use href="#i-chevron-up"/></svg>
     </button>
 
